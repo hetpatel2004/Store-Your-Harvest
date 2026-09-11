@@ -1,0 +1,20 @@
+{
+  "name": "agricold-connect",
+  "version": "1.0.0",
+  "description": "AgriCold Connect - Modern Cold Storage Marketplace for Farmers (MERN Stack)",
+  "scripts": {
+    "server": "cd server && npm start",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "seed": "cd server && npm run seed"
+  },
+  "keywords": [
+    "cold-storage",
+    "agritech",
+    "mern",
+    "gujarat",
+    "farmers"
+  ],
+  "author": "AgriCold Connect Team",
+  "license": "ISC"
+}
