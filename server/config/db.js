@@ -1,19 +1,28 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
+
+// Configure reliable DNS servers to resolve MongoDB Atlas SRV records across all network providers
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (dnsErr) {
+  console.warn('DNS server override note:', dnsErr.message);
+}
 
 let mongoServer = null;
 
 const connectDB = async () => {
   const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/agricold_connect';
-  
+  const maskedUri = uri.includes('@') ? uri.replace(/:([^:@]+)@/, ':****@') : uri;
+
   try {
-    // Attempt connecting to provided URI with short serverSelectionTimeoutMS
-    console.log(`Connecting to MongoDB at ${uri}...`);
+    console.log(`Connecting to MongoDB Atlas at ${maskedUri}...`);
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 2500,
+      serverSelectionTimeoutMS: 8000,
     });
-    console.log(' MongoDB Connected to Local / Atlas instance');
+    console.log('✅ MongoDB Connected successfully to Atlas Cloud Database!');
   } catch (err) {
-    console.warn('⚠️ Local MongoDB connection failed. Falling back to embedded MongoDB In-Memory Server for seamless hackathon demo...');
+    console.warn('⚠️ Cloud MongoDB Atlas direct connection notice:', err.message);
+    console.warn('Falling back to embedded MongoDB In-Memory Server for seamless execution...');
     try {
       const { MongoMemoryServer } = require('mongodb-memory-server');
       mongoServer = await MongoMemoryServer.create();

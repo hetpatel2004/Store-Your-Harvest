@@ -13,6 +13,7 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
+  AlertCircle,
 } from 'lucide-react';
 
 export default function ContactPage() {
@@ -24,6 +25,7 @@ export default function ContactPage() {
     message: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async (e) => {
@@ -202,6 +204,13 @@ export default function ContactPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
                     ></textarea>
                   </div>
+
+                  {errorMessage && (
+                    <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{errorMessage}</span>
+                    </div>
+                  )}
 
                   <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <Link

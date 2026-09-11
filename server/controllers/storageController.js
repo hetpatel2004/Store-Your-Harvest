@@ -169,7 +169,11 @@ const createStorage = async (req, res, next) => {
       temperatureMax: Number(temperatureMax),
       humidityMin: Number(humidityMin) || 85,
       humidityMax: Number(humidityMax) || 95,
-      acceptedCrops: Array.isArray(acceptedCrops) ? acceptedCrops : acceptedCrops.split(',').map((s) => s.trim()),
+      acceptedCrops: Array.isArray(acceptedCrops)
+        ? acceptedCrops.map((s) => String(s).trim()).filter(Boolean)
+        : typeof acceptedCrops === 'string' && acceptedCrops.trim()
+        ? acceptedCrops.split(',').map((s) => s.trim()).filter(Boolean)
+        : [],
       minimumQuantity: Number(minimumQuantity) || 100,
       pricePerKg: Number(pricePerKg),
       handlingCharge: Number(handlingCharge) || 350,
@@ -209,7 +213,52 @@ const updateStorage = async (req, res, next) => {
       return next(new ErrorResponse('Not authorized to update this facility', 403));
     }
 
-    storage = await Storage.findByIdAndUpdate(req.params.id, req.body, {
+    // Only these fields may be edited directly. Status, verification, and rating
+    // are controlled exclusively through the admin approval workflow.
+    const EDITABLE_FIELDS = [
+      'name', 'tagline', 'address', 'city', 'district', 'latitude', 'longitude',
+      'storageType', 'totalCapacity', 'availableCapacity', 'temperatureMin',
+      'temperatureMax', 'humidityMin', 'humidityMax', 'acceptedCrops',
+      'minimumQuantity', 'pricePerKg', 'handlingCharge', 'transportRatePerKm',
+      'storageDuration', 'paymentTerms', 'damagePolicy', 'operatingHours',
+      'contactPhone', 'contactEmail', 'images', 'features',
+    ];
+    const NUMERIC_FIELDS = [
+      'latitude', 'longitude', 'totalCapacity', 'availableCapacity', 'temperatureMin',
+      'temperatureMax', 'humidityMin', 'humidityMax', 'minimumQuantity', 'pricePerKg',
+      'handlingCharge', 'transportRatePerKm',
+    ];
+
+    const updateData = {};
+    Object.keys(req.body).forEach((key) => {
+      if (!EDITABLE_FIELDS.includes(key) || req.body[key] === undefined) return;
+      if (key === 'acceptedCrops') {
+        updateData.acceptedCrops = Array.isArray(req.body.acceptedCrops)
+          ? req.body.acceptedCrops.map((s) => String(s).trim()).filter(Boolean)
+          : typeof req.body.acceptedCrops === 'string' && req.body.acceptedCrops.trim()
+          ? req.body.acceptedCrops.split(',').map((s) => s.trim()).filter(Boolean)
+          : [];
+      } else if (key === 'images') {
+        updateData.images = Array.isArray(req.body.images)
+          ? req.body.images
+          : req.body.images
+          ? [req.body.images]
+          : [];
+      } else if (key === 'features') {
+        updateData.features = Array.isArray(req.body.features)
+          ? req.body.features
+          : req.body.features
+          ? req.body.features.split(',').map((f) => f.trim())
+          : [];
+      } else if (NUMERIC_FIELDS.includes(key)) {
+        const num = Number(req.body[key]);
+        updateData[key] = Number.isFinite(num) ? num : storage[key];
+      } else {
+        updateData[key] = req.body[key];
+      }
+    });
+
+    storage = await Storage.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
     });

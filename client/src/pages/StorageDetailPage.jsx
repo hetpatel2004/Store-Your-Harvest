@@ -320,6 +320,14 @@ export default function StorageDetailPage() {
                   <span className="text-emerald-800 text-base">₹{calculatedTotal.toLocaleString()}</span>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setIsCalcOpen(true)}
+                className="w-full mt-3 py-2 rounded-xl border border-slate-200 text-[11px] font-bold text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+              >
+                Compare nearby vs distant facilities → see hidden transport charges
+              </button>
             </div>
 
             <div className="pt-4">
@@ -483,6 +491,12 @@ export default function StorageDetailPage() {
           onClose={() => setIsBookingOpen(false)}
         />
       )}
+
+      {/* Cost Calculator Modal */}
+      <CostCalculatorModal
+        isOpen={isCalcOpen}
+        onClose={() => setIsCalcOpen(false)}
+      />
     </div>
   );
 }

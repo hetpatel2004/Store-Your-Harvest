@@ -293,10 +293,62 @@ export default function AuthPage() {
                 </button>
               </div>
 
-              {/* Static Admin Reference note */}
-              <div className="mt-4 pt-3 border-t border-slate-100 text-center text-[11px] text-slate-500">
-                <span>Platform Admin static access: </span>
-                <code className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-sm font-bold">admin@agricold.in</code> / <code className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-sm font-bold">Admin@123</code>
+              {/* Quick Demo Credentials Box for Hackathon Testing */}
+              <div className="mt-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-left text-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold uppercase tracking-wider text-[10px] text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>Demo Credentials (Click to Autofill)</span>
+                  </span>
+                  <span className="text-[10px] bg-amber-400 text-slate-950 font-bold px-2 py-0.5 rounded-full">
+                    Testing Ready
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  {/* Super Admin Quick Autofill */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLogin(true);
+                      setEmail('admin@agricold.in');
+                      setPassword('Admin@123');
+                    }}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between mb-0.5">
+                      <strong className="text-slate-900 dark:text-white font-black text-xs">Super Admin</strong>
+                      <span className="text-[9px] bg-rose-500/20 text-rose-400 font-bold px-1.5 py-0.2 rounded">admin</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">admin@agricold.in</div>
+                    <div className="text-[10px] text-slate-400 font-mono">Pass: Admin@123</div>
+                  </button>
+
+                  {/* Storage Owner Quick Autofill */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLogin(true);
+                      setEmail('rajesh@patelcoldstorage.com');
+                      setPassword('Owner@123');
+                    }}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between mb-0.5">
+                      <strong className="text-slate-900 dark:text-white font-black text-xs">Storage Owner</strong>
+                      <span className="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-1.5 py-0.2 rounded">owner</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">rajesh@patelcoldstorage.com</div>
+                    <div className="text-[10px] text-slate-400 font-mono">Pass: Owner@123</div>
+                  </button>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                  <span>🧑‍🌾 Farmer Access:</span>
+                  <Link to="/storages" className="text-amber-500 hover:underline font-bold">
+                    Direct Browsing (No Login Needed) →
+                  </Link>
+                </div>
               </div>
             </form>
           </div>

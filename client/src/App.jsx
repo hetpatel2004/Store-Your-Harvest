@@ -10,6 +10,7 @@ import StorageDetailPage from './pages/StorageDetailPage';
 import OwnerDashboardPage from './pages/OwnerDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AuthPage from './pages/AuthPage';
+import TransportComparePage from './pages/TransportComparePage';
 
 export default function App() {
   const location = useLocation();
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/storages" element={<StorageResultsPage />} />
           <Route path="/storages/:id" element={<StorageDetailPage />} />
+          <Route path="/transport" element={<TransportComparePage />} />
           <Route path="/owner" element={<OwnerDashboardPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/auth" element={<AuthPage />} />

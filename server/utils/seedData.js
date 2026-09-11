@@ -417,9 +417,9 @@ const seedDatabase = async () => {
       console.log(`🔑 Static Admin account verified: ${adminEmail}`);
     }
 
-    const userCount = await User.countDocuments();
-    if (userCount > 1) {
-      console.log('⚡ Database already contains storage data. Ready.');
+    const storageCount = await Storage.countDocuments();
+    if (storageCount > 0) {
+      console.log(`⚡ Database already contains ${storageCount} storage facilities. Ready.`);
       return;
     }
 
