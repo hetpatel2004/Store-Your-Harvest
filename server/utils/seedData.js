@@ -398,9 +398,28 @@ const seedStorageData = (owner1Id, owner2Id, owner3Id) => [
 
 const seedDatabase = async () => {
   try {
+    // Ensure static Admin user is always created
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@agricold.in').toLowerCase().trim();
+    const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
+    let admin = await User.findOne({ email: adminEmail });
+    if (!admin) {
+      admin = await User.create({
+        name: 'AgriCold Super Admin',
+        email: adminEmail,
+        phone: '+91 98250 11001',
+        password: adminPassword,
+        role: 'admin',
+        city: 'Ahmedabad',
+        state: 'Gujarat',
+      });
+      console.log(`🔑 Static Admin account initialized: ${adminEmail} / ${adminPassword}`);
+    } else {
+      console.log(`🔑 Static Admin account verified: ${adminEmail}`);
+    }
+
     const userCount = await User.countDocuments();
-    if (userCount > 0) {
-      console.log('⚡ Database already contains data. Skipping initial seeding.');
+    if (userCount > 1) {
+      console.log('⚡ Database already contains storage data. Ready.');
       return;
     }
 

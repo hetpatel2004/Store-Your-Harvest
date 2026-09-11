@@ -10,17 +10,19 @@ import {
   Mail,
   Phone,
   ArrowRight,
-  Sparkles,
   AlertCircle,
   CheckCircle2,
+  MapPin,
+  KeyRound,
 } from 'lucide-react';
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login, register, demoLogin, isAuthenticated, user } = useAuth();
+  const { login, register, isAuthenticated, user } = useAuth();
 
-  const initialTab = searchParams.get('tab') === 'register' ? 'register' : 'login';
+  // If URL has ?tab=register, default to register; otherwise default to login or register
+  const initialTab = searchParams.get('tab') === 'login' ? 'login' : 'register';
   const [isLogin, setIsLogin] = useState(initialTab === 'login');
 
   const [name, setName] = useState('');
@@ -31,8 +33,9 @@ export default function AuthPage() {
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  // Redirect if already logged in as owner or admin
+  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === 'admin') navigate('/admin');
@@ -44,39 +47,40 @@ export default function AuthPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
+    setSuccessMessage('');
     setLoading(true);
 
     try {
       if (isLogin) {
+        // OWNER / ADMIN LOGIN WITH EMAIL & PASSWORD
         const res = await login(email, password);
-        if (res.user.role === 'admin') navigate('/admin');
-        else navigate('/owner');
+        if (res.user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/owner');
+        }
       } else {
+        // OWNER REGISTRATION FIRST
         const res = await register({
           name,
           email,
           phone,
           password,
-          role: 'owner', // Strictly for storage owners
+          role: 'owner',
           city,
         });
-        navigate('/owner');
+
+        // Show success and switch to Login tab so owner must log in with their credentials!
+        setSuccessMessage(
+          'Registration successful! Please enter your password below to log in and access your facility dashboard.'
+        );
+        setIsLogin(true);
+        setPassword(''); // require typing password to confirm login
       }
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Authentication failed. Please check credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickOwnerDemo = async () => {
-    setLoading(true);
-    setErrorMessage('');
-    try {
-      await demoLogin('owner');
-      navigate('/owner');
-    } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Demo login failed');
+      setErrorMessage(
+        err.response?.data?.message || 'Authentication failed. Please check your credentials.'
+      );
     } finally {
       setLoading(false);
     }
@@ -107,7 +111,7 @@ export default function AuthPage() {
 
             <Link
               to="/storages"
-              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-950 hover:bg-slate-900 text-amber-400 hover:text-white font-black text-xs shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 border border-slate-900"
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-950 hover:bg-slate-900 text-amber-400 hover:text-white font-black text-xs shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 border border-slate-900 cursor-pointer"
             >
               <span>Explore Storages Now</span>
               <ArrowRight className="w-4 h-4" />
@@ -115,7 +119,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* 2. STORAGE OWNER ONLY AUTHENTICATION CARD */}
+        {/* 2. STORAGE OWNER AUTHENTICATION CARD (REGISTER THEN LOGIN) */}
         <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-emerald-950 to-slate-900 p-6 sm:p-8 text-white text-center">
@@ -127,69 +131,66 @@ export default function AuthPage() {
             </h2>
             <p className="text-xs text-emerald-200/90 mt-1">
               {isLogin
-                ? 'Sign in to access your facility dashboard, capacity & farmer bookings'
-                : 'Register your cold storage facility to receive direct farmer reservations'}
+                ? 'Sign in to access your facility dashboard, live capacity & farmer bookings'
+                : 'Register your cold storage facility first, then log in to manage your bays'}
             </p>
-          </div>
-
-          {/* 1-Click Evaluator Demo for Owner */}
-          <div className="p-4 bg-emerald-50/80 border-b border-emerald-100 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs text-emerald-950">
-              <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span className="font-bold">Hackathon 1-Click Owner Demo:</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleQuickOwnerDemo}
-              disabled={loading}
-              className="px-4 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs hover:scale-105 transition-all cursor-pointer"
-            >
-              Instant Owner Login
-            </button>
           </div>
 
           {/* Form Container */}
           <div className="p-6 sm:p-8">
-            {/* Mode Switch Tabs (Login / Register) */}
+            {/* Mode Switch Tabs (Register First, then Login) */}
             <div className="flex rounded-2xl bg-slate-100 p-1 mb-6 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsLogin(true);
-                  setErrorMessage('');
-                }}
-                className={`flex-1 py-2.5 rounded-xl transition-all ${
-                  isLogin ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                Owner Sign In
-              </button>
               <button
                 type="button"
                 onClick={() => {
                   setIsLogin(false);
                   setErrorMessage('');
+                  setSuccessMessage('');
                 }}
-                className={`flex-1 py-2.5 rounded-xl transition-all ${
+                className={`flex-1 py-2.5 rounded-xl transition-all cursor-pointer ${
                   !isLogin ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Register Storage Facility
+                1. Register Facility
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogin(true);
+                  setErrorMessage('');
+                  setSuccessMessage('');
+                }}
+                className={`flex-1 py-2.5 rounded-xl transition-all cursor-pointer ${
+                  isLogin ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                2. Owner Sign In
               </button>
             </div>
 
+            {/* Success Message Banner */}
+            {successMessage && (
+              <div className="p-4 mb-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 animate-in fade-in">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span className="font-semibold leading-relaxed">{successMessage}</span>
+              </div>
+            )}
+
+            {/* Error Message Banner */}
             {errorMessage && (
-              <div className="p-3.5 mb-5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+              <div className="p-3.5 mb-5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2 animate-in fade-in">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              {/* Name input if registering */}
+              {/* Registration Only: Full Name */}
               {!isLogin && (
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Owner / Manager Name *</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Facility Owner / Manager Name *
+                  </label>
                   <input
                     type="text"
                     required
@@ -201,23 +202,34 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* Email */}
+              {/* Email Address (used for both register & login) */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Official Email Address *</label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="owner@coldstorage.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                />
+                <label className="font-bold text-slate-700 block mb-1">
+                  Official Email Address *
+                </label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="owner@coldstorage.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  />
+                </div>
+                {isLogin && (
+                  <span className="text-[11px] text-slate-400 mt-0.5 block">
+                    Admin portal login: <strong className="text-slate-600">admin@agricold.in</strong>
+                  </span>
+                )}
               </div>
 
-              {/* Phone if registering */}
+              {/* Registration Only: Phone Number */}
               {!isLogin && (
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Facility Contact Mobile *</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Facility Contact Mobile Number *
+                  </label>
                   <input
                     type="tel"
                     required
@@ -229,16 +241,18 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* City if registering */}
+              {/* Registration Only: City */}
               {!isLogin && (
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Gujarat District / City *</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Gujarat District / City *
+                  </label>
                   <select
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-hidden bg-white"
                   >
-                    {['Ahmedabad', 'Sanand', 'Bavla', 'Gandhinagar', 'Kadi', 'Anand', 'Dholka'].map((c) => (
+                    {['Ahmedabad', 'Sanand', 'Bavla', 'Gandhinagar', 'Kadi', 'Anand', 'Dholka', 'Rajkot', 'Mehsana'].map((c) => (
                       <option key={c} value={c}>{c}, Gujarat</option>
                     ))}
                   </select>
@@ -247,7 +261,9 @@ export default function AuthPage() {
 
               {/* Password */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Password *</label>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Password *
+                </label>
                 <input
                   type="password"
                   required
@@ -265,9 +281,22 @@ export default function AuthPage() {
                   disabled={loading}
                   className="w-full py-3 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-sm shadow-md shadow-emerald-700/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  <span>{loading ? 'Processing...' : isLogin ? 'Access Owner Dashboard' : 'Register Facility'}</span>
+                  <KeyRound className="w-4 h-4" />
+                  <span>
+                    {loading
+                      ? 'Processing...'
+                      : isLogin
+                      ? 'Sign In with Credentials'
+                      : 'Complete Facility Registration'}
+                  </span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
+              </div>
+
+              {/* Static Admin Reference note */}
+              <div className="mt-4 pt-3 border-t border-slate-100 text-center text-[11px] text-slate-500">
+                <span>Platform Admin static access: </span>
+                <code className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-sm font-bold">admin@agricold.in</code> / <code className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-sm font-bold">Admin@123</code>
               </div>
             </form>
           </div>

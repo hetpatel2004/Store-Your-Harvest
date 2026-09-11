@@ -1,11 +1,13 @@
 const User = require('../models/User');
 const Storage = require('../models/Storage');
 const Booking = require('../models/Booking');
+const Inquiry = require('../models/Inquiry');
+const ErrorResponse = require('../utils/errorResponse');
 
 // @desc    Get admin platform analytics & statistics
 // @route   GET /api/admin/stats
 // @access  Private (Admin)
-const getAdminStats = async (req, res) => {
+const getAdminStats = async (req, res, next) => {
   try {
     const totalFarmers = await User.countDocuments({ role: 'farmer' });
     const totalOwners = await User.countDocuments({ role: 'owner' });
@@ -14,6 +16,7 @@ const getAdminStats = async (req, res) => {
     const pendingApprovals = await Storage.countDocuments({ status: 'pending' });
     const activeBookings = await Booking.countDocuments({ status: 'accepted' });
     const totalBookings = await Booking.countDocuments();
+    const totalInquiries = await Inquiry.countDocuments();
 
     // Capacity aggregation
     const capacityAggregation = await Storage.aggregate([
@@ -45,11 +48,12 @@ const getAdminStats = async (req, res) => {
       stats: {
         totalFarmers: totalFarmers + 500, // platform baseline for Gujarat hackathon demo
         totalOwners: totalOwners + 120,
-        totalStorages: totalStorages,
-        verifiedFacilities: verifiedFacilities,
-        pendingApprovals: pendingApprovals,
-        activeBookings: activeBookings,
-        totalBookings: totalBookings,
+        totalStorages,
+        verifiedFacilities,
+        pendingApprovals,
+        activeBookings,
+        totalBookings,
+        totalInquiries,
         totalCapacityMT: Math.round(totalCapacityKg / 1000) + 25000,
         availableCapacityMT: Math.round(availableCapacityKg / 1000),
         occupiedCapacityMT: Math.round(occupiedCapacityKg / 1000),
@@ -59,15 +63,14 @@ const getAdminStats = async (req, res) => {
       pendingFacilities,
     });
   } catch (error) {
-    console.error('getAdminStats error:', error);
-    res.status(500).json({ message: 'Server error retrieving admin statistics' });
+    next(error);
   }
 };
 
 // @desc    Get all storages for admin management
 // @route   GET /api/admin/storages
 // @access  Private (Admin)
-const getAdminStorages = async (req, res) => {
+const getAdminStorages = async (req, res, next) => {
   try {
     const storages = await Storage.find()
       .populate('ownerId', 'name phone email')
@@ -75,20 +78,20 @@ const getAdminStorages = async (req, res) => {
 
     res.json({ success: true, count: storages.length, storages });
   } catch (error) {
-    res.status(500).json({ message: 'Server error retrieving storages for admin' });
+    next(error);
   }
 };
 
 // @desc    Approve or reject storage facility
 // @route   PUT /api/admin/storages/:id/status
 // @access  Private (Admin)
-const updateFacilityStatus = async (req, res) => {
+const updateFacilityStatus = async (req, res, next) => {
   try {
     const { status, verified } = req.body;
     const storage = await Storage.findById(req.params.id);
 
     if (!storage) {
-      return res.status(404).json({ message: 'Storage not found' });
+      return next(new ErrorResponse('Storage not found', 404));
     }
 
     if (status) storage.status = status;
@@ -104,7 +107,7 @@ const updateFacilityStatus = async (req, res) => {
       storage,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error updating storage status' });
+    next(error);
   }
 };
 

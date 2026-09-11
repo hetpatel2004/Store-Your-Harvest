@@ -1,182 +1,11 @@
 const Storage = require('../models/Storage');
-const { CROP_PROFILES } = require('../utils/seedData');
-
-// City coordinate lookup for distance calculation
-const CITY_COORDS = {
-  ahmedabad: { lat: 23.0225, lng: 72.5714 },
-  sanand: { lat: 22.9856, lng: 72.3802 },
-  bavla: { lat: 22.8361, lng: 72.3619 },
-  gandhinagar: { lat: 23.2156, lng: 72.6369 },
-  kadi: { lat: 23.3039, lng: 72.3328 },
-  anand: { lat: 22.5645, lng: 72.9289 },
-  dholka: { lat: 22.7239, lng: 72.4644 },
-  naroda: { lat: 23.0805, lng: 72.6589 },
-  mehsana: { lat: 23.5880, lng: 72.3693 },
-  rajkot: { lat: 22.3039, lng: 70.8022 },
-  vadodara: { lat: 22.3072, lng: 73.1812 },
-  surat: { lat: 21.1702, lng: 72.8311 },
-};
-
-// Haversine formula for distance in kilometers
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // Earth's radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Math.round(R * c * 10) / 10;
-};
-
-// Smart Recommendation Scoring Engine
-const calculateSmartRecommendation = (storage, farmerRequirements) => {
-  const { crop, quantity = 500, userLat, userLng, userCity, durationDays = 30 } = farmerRequirements;
-
-  let score = 0;
-  const explanations = [];
-
-  // 1. Crop Compatibility (30 pts)
-  let isCropAccepted = false;
-  if (crop && storage.acceptedCrops && storage.acceptedCrops.length > 0) {
-    isCropAccepted = storage.acceptedCrops.some(
-      (c) => c.toLowerCase() === crop.toLowerCase()
-    );
-    if (isCropAccepted) {
-      score += 30;
-      explanations.push(`Explicitly accepts ${crop}`);
-    } else {
-      score += 5; // fallback
-    }
-  } else {
-    score += 25; // neutral if no crop specified
-  }
-
-  // 2. Temperature Compatibility (25 pts)
-  const cropProfile = crop ? CROP_PROFILES[crop] : null;
-  if (cropProfile) {
-    const idealMin = cropProfile.tempMin;
-    const idealMax = cropProfile.tempMax;
-    // Check overlap between [storage.temperatureMin, storage.temperatureMax] and [idealMin, idealMax]
-    const overlapMin = Math.max(storage.temperatureMin, idealMin);
-    const overlapMax = Math.min(storage.temperatureMax, idealMax);
-
-    if (overlapMin <= overlapMax) {
-      score += 25;
-      explanations.push(`Suitable temperature range (${storage.temperatureMin}°C to ${storage.temperatureMax}°C)`);
-    } else {
-      const distanceToRange = Math.min(
-        Math.abs(storage.temperatureMin - idealMax),
-        Math.abs(idealMin - storage.temperatureMax)
-      );
-      if (distanceToRange <= 2) {
-        score += 15;
-        explanations.push(`Close temperature support (${storage.temperatureMin}°C to ${storage.temperatureMax}°C)`);
-      } else {
-        score += 5;
-      }
-    }
-  } else {
-    score += 20;
-  }
-
-  // 3. Available Capacity (15 pts)
-  const qty = Number(quantity) || 500;
-  if (storage.availableCapacity >= qty) {
-    if (storage.availableCapacity >= qty * 3) {
-      score += 15;
-      explanations.push(`Ample capacity (${(storage.availableCapacity / 1000).toFixed(0)} MT free)`);
-    } else {
-      score += 10;
-      explanations.push(`Available space for ${qty} kg`);
-    }
-  } else {
-    score += 0;
-    explanations.push('Limited capacity remaining');
-  }
-
-  // 4. Distance Calculation & Score (15 pts)
-  let farmerLat = userLat;
-  let farmerLng = userLng;
-
-  if ((!farmerLat || !farmerLng) && userCity) {
-    const normalizedCity = userCity.toLowerCase().trim();
-    if (CITY_COORDS[normalizedCity]) {
-      farmerLat = CITY_COORDS[normalizedCity].lat;
-      farmerLng = CITY_COORDS[normalizedCity].lng;
-    }
-  }
-
-  // Default to Ahmedabad center if no coords
-  if (!farmerLat || !farmerLng) {
-    farmerLat = 23.0225;
-    farmerLng = 72.5714;
-  }
-
-  const distance = calculateDistance(farmerLat, farmerLng, storage.latitude, storage.longitude);
-
-  if (distance <= 12) {
-    score += 15;
-    explanations.push(`Only ${distance} km from your location`);
-  } else if (distance <= 25) {
-    score += 12;
-    explanations.push(`${distance} km away`);
-  } else if (distance <= 45) {
-    score += 8;
-  } else {
-    score += 4;
-  }
-
-  // 5. Reliability & Verification (15 pts)
-  if (storage.verified) {
-    score += 7;
-  }
-  if (storage.rating >= 4.8) {
-    score += 8;
-    explanations.push(`Top-rated facility (⭐ ${storage.rating})`);
-  } else if (storage.rating >= 4.5) {
-    score += 6;
-  } else {
-    score += 4;
-  }
-
-  // Ensure score is between 45% and 98%
-  const matchScore = Math.min(Math.max(Math.round(score), 48), 98);
-
-  // Total Cost Calculation
-  const months = Math.max(Number(durationDays) || 30, 1) / 30;
-  const storageCost = Math.round(storage.pricePerKg * qty * months);
-  const handlingCost = storage.handlingCharge || 350;
-  const transportRate = storage.transportRatePerKm || 25;
-  const transportCost = Math.round(distance * transportRate);
-  const totalCost = storageCost + handlingCost + transportCost;
-
-  return {
-    matchScore,
-    isRecommended: matchScore >= 88,
-    isBestMatch: matchScore >= 92,
-    matchExplanation: explanations.slice(0, 3).join(' • '),
-    distance,
-    costBreakdown: {
-      quantity: qty,
-      durationDays: Number(durationDays) || 30,
-      storageRatePerKg: storage.pricePerKg,
-      storageCost,
-      handlingCost,
-      transportRatePerKm: transportRate,
-      transportCost,
-      totalCost,
-    },
-  };
-};
+const { computeRecommendationScore, CROP_STORAGE_PROFILES } = require('../services/recommendationService');
+const ErrorResponse = require('../utils/errorResponse');
 
 // @desc    Get all storages with smart filtering, recommendation scores, and distance
 // @route   GET /api/storages
 // @access  Public
-const getStorages = async (req, res) => {
+const getStorages = async (req, res, next) => {
   try {
     const {
       crop,
@@ -188,7 +17,6 @@ const getStorages = async (req, res) => {
       minCapacity,
       maxPrice,
       maxDistance,
-      temperature,
       sortBy = 'recommended', // 'recommended', 'distance', 'price_asc', 'capacity_desc', 'rating'
       verifiedOnly,
     } = req.query;
@@ -207,13 +35,7 @@ const getStorages = async (req, res) => {
       query.pricePerKg = { $lte: Number(maxPrice) };
     }
 
-    let storages = await Storage.find(query).populate('ownerId', 'name phone email');
-
-    // Filter by crop if provided and filter query demands strict crop
-    if (crop && crop !== 'All') {
-      // We will still keep facilities but rank them lower, or optionally filter
-      // For friendly search, highlight matching ones first
-    }
+    const storages = await Storage.find(query).populate('ownerId', 'name phone email');
 
     const farmerReqs = {
       crop: crop || '',
@@ -227,7 +49,7 @@ const getStorages = async (req, res) => {
     // Calculate smart recommendation scores and cost breakdowns
     let enrichedStorages = storages.map((storage) => {
       const storageObj = storage.toObject();
-      const recommendation = calculateSmartRecommendation(storageObj, farmerReqs);
+      const recommendation = computeRecommendationScore(storageObj, farmerReqs);
       return {
         ...storageObj,
         ...recommendation,
@@ -261,23 +83,22 @@ const getStorages = async (req, res) => {
       storages: enrichedStorages,
     });
   } catch (error) {
-    console.error('getStorages error:', error);
-    res.status(500).json({ message: error.message || 'Server error fetching storages' });
+    next(error);
   }
 };
 
 // @desc    Get single storage by ID
 // @route   GET /api/storages/:id
 // @access  Public
-const getStorageById = async (req, res) => {
+const getStorageById = async (req, res, next) => {
   try {
     const storage = await Storage.findById(req.params.id).populate('ownerId', 'name phone email');
     if (!storage) {
-      return res.status(404).json({ message: 'Storage facility not found' });
+      return next(new ErrorResponse('Storage facility not found', 404));
     }
 
     const { crop, quantity = 500, city = 'Ahmedabad', duration = 30 } = req.query;
-    const recommendation = calculateSmartRecommendation(storage.toObject(), {
+    const recommendation = computeRecommendationScore(storage.toObject(), {
       crop,
       quantity: Number(quantity),
       userCity: city,
@@ -290,17 +111,17 @@ const getStorageById = async (req, res) => {
         ...storage.toObject(),
         ...recommendation,
       },
-      cropProfile: crop ? CROP_PROFILES[crop] : null,
+      cropProfile: crop ? CROP_STORAGE_PROFILES[crop] : null,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message || 'Server error fetching storage details' });
+    next(error);
   }
 };
 
 // @desc    Create a new storage facility (by Storage Owner)
 // @route   POST /api/storages
 // @access  Private (Owner / Admin)
-const createStorage = async (req, res) => {
+const createStorage = async (req, res, next) => {
   try {
     const {
       name,
@@ -363,30 +184,29 @@ const createStorage = async (req, res) => {
         'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80'
       ],
       features: Array.isArray(features) ? features : (features ? features.split(',').map(f => f.trim()) : ['Power backup', 'CCTV monitoring', 'Weighbridge']),
-      verified: false, // requires admin verification
+      verified: false,
       status: 'pending',
     });
 
     res.status(201).json({ success: true, storage });
   } catch (error) {
-    console.error('createStorage error:', error);
-    res.status(500).json({ message: error.message || 'Server error creating storage facility' });
+    next(error);
   }
 };
 
 // @desc    Update storage facility
 // @route   PUT /api/storages/:id
 // @access  Private (Owner / Admin)
-const updateStorage = async (req, res) => {
+const updateStorage = async (req, res, next) => {
   try {
     let storage = await Storage.findById(req.params.id);
     if (!storage) {
-      return res.status(404).json({ message: 'Storage not found' });
+      return next(new ErrorResponse('Storage not found', 404));
     }
 
     // Check ownership unless admin
     if (storage.ownerId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to update this facility' });
+      return next(new ErrorResponse('Not authorized to update this facility', 403));
     }
 
     storage = await Storage.findByIdAndUpdate(req.params.id, req.body, {
@@ -396,40 +216,40 @@ const updateStorage = async (req, res) => {
 
     res.json({ success: true, storage });
   } catch (error) {
-    res.status(500).json({ message: error.message || 'Server error updating storage' });
+    next(error);
   }
 };
 
 // @desc    Delete storage facility
 // @route   DELETE /api/storages/:id
 // @access  Private (Owner / Admin)
-const deleteStorage = async (req, res) => {
+const deleteStorage = async (req, res, next) => {
   try {
     const storage = await Storage.findById(req.params.id);
     if (!storage) {
-      return res.status(404).json({ message: 'Storage not found' });
+      return next(new ErrorResponse('Storage not found', 404));
     }
 
     if (storage.ownerId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to delete this facility' });
+      return next(new ErrorResponse('Not authorized to delete this facility', 403));
     }
 
     await storage.deleteOne();
     res.json({ success: true, message: 'Storage facility removed' });
   } catch (error) {
-    res.status(500).json({ message: error.message || 'Server error deleting storage' });
+    next(error);
   }
 };
 
 // @desc    Get owner's facilities
 // @route   GET /api/storages/my/facilities
 // @access  Private (Owner)
-const getMyFacilities = async (req, res) => {
+const getMyFacilities = async (req, res, next) => {
   try {
     const storages = await Storage.find({ ownerId: req.user._id });
-    res.json({ success: true, storages });
+    res.json({ success: true, count: storages.length, storages });
   } catch (error) {
-    res.status(500).json({ message: 'Server error fetching your facilities' });
+    next(error);
   }
 };
 
@@ -440,5 +260,4 @@ module.exports = {
   updateStorage,
   deleteStorage,
   getMyFacilities,
-  CROP_PROFILES,
 };

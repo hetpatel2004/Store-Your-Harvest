@@ -1,10 +1,12 @@
 const Booking = require('../models/Booking');
 const Storage = require('../models/Storage');
+const { calculateTotalCost } = require('../services/costCalculatorService');
+const ErrorResponse = require('../utils/errorResponse');
 
 // @desc    Create new storage request / booking
 // @route   POST /api/bookings
-// @access  Public (Optional auth for guest farmers or logged-in farmers)
-const createBooking = async (req, res) => {
+// @access  Public (Allows guest farmers or authenticated users)
+const createBooking = async (req, res, next) => {
   try {
     const {
       storageId,
@@ -21,28 +23,33 @@ const createBooking = async (req, res) => {
     } = req.body;
 
     if (!storageId || !crop || !quantity || !startDate || !farmerName || !farmerPhone) {
-      return res.status(400).json({ message: 'Please provide all required booking fields' });
+      return next(new ErrorResponse('Please provide all required booking fields', 400));
     }
 
     const storage = await Storage.findById(storageId);
     if (!storage) {
-      return res.status(404).json({ message: 'Selected cold storage facility not found' });
+      return next(new ErrorResponse('Selected cold storage facility not found', 404));
     }
 
     const qty = Number(quantity);
     if (storage.availableCapacity < qty) {
-      return res.status(400).json({
-        message: `Requested quantity (${qty} kg) exceeds current available capacity (${storage.availableCapacity} kg)`,
-      });
+      return next(
+        new ErrorResponse(
+          `Requested quantity (${qty} kg) exceeds available space (${storage.availableCapacity} kg)`,
+          400
+        )
+      );
     }
 
-    // Calculate costs
-    const months = Math.max(Number(durationDays) || 30, 1) / 30;
-    const estimatedStorageCost = Math.round(storage.pricePerKg * qty * months);
-    const handlingCost = storage.handlingCharge || 350;
-    const transportRate = storage.transportRatePerKm || 25;
-    const transportCost = Math.round((Number(distanceKm) || 10) * transportRate);
-    const totalCost = estimatedStorageCost + handlingCost + transportCost;
+    // Calculate itemized costs via service
+    const costBreakdown = calculateTotalCost({
+      pricePerKg: storage.pricePerKg,
+      quantity: qty,
+      durationDays,
+      handlingCharge: storage.handlingCharge,
+      transportRatePerKm: storage.transportRatePerKm,
+      distanceKm,
+    });
 
     const booking = await Booking.create({
       farmerId: req.user ? req.user._id : null,
@@ -58,11 +65,11 @@ const createBooking = async (req, res) => {
       durationDays: Number(durationDays),
       requiredTemp: requiredTemp || `${storage.temperatureMin}°C - ${storage.temperatureMax}°C`,
       specialRequirements: specialRequirements || '',
-      estimatedStorageCost,
-      handlingCost,
-      transportCost,
-      totalCost,
-      distanceKm: Number(distanceKm) || 10,
+      estimatedStorageCost: costBreakdown.storageCost,
+      handlingCost: costBreakdown.handlingCost,
+      transportCost: costBreakdown.transportCost,
+      totalCost: costBreakdown.totalCost,
+      distanceKm: costBreakdown.distanceKm,
       status: 'pending',
     });
 
@@ -72,27 +79,24 @@ const createBooking = async (req, res) => {
       booking,
     });
   } catch (error) {
-    console.error('createBooking error:', error);
-    res.status(500).json({ message: error.message || 'Server error submitting booking request' });
+    next(error);
   }
 };
 
 // @desc    Get bookings (Farmer sees their own, Owner sees for their facilities, Admin sees all)
 // @route   GET /api/bookings
 // @access  Private
-const getBookings = async (req, res) => {
+const getBookings = async (req, res, next) => {
   try {
     let query = {};
 
     if (req.user.role === 'farmer') {
       query = { $or: [{ farmerId: req.user._id }, { farmerPhone: req.user.phone }] };
     } else if (req.user.role === 'owner') {
-      // Find storages owned by this owner
       const ownerStorages = await Storage.find({ ownerId: req.user._id }).select('_id');
       const storageIds = ownerStorages.map((s) => s._id);
       query = { storageId: { $in: storageIds } };
     }
-    // Admin sees all without restriction
 
     const bookings = await Booking.find(query)
       .populate('storageId', 'name address city contactPhone images')
@@ -100,40 +104,39 @@ const getBookings = async (req, res) => {
 
     res.json({ success: true, count: bookings.length, bookings });
   } catch (error) {
-    console.error('getBookings error:', error);
-    res.status(500).json({ message: 'Server error retrieving bookings' });
+    next(error);
   }
 };
 
 // @desc    Update booking status (accept, reject, complete)
 // @route   PUT /api/bookings/:id/status
 // @access  Private (Owner / Admin)
-const updateBookingStatus = async (req, res) => {
+const updateBookingStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
     if (!['pending', 'accepted', 'rejected', 'completed'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status value' });
+      return next(new ErrorResponse('Invalid status value', 400));
     }
 
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
-      return res.status(404).json({ message: 'Booking request not found' });
+      return next(new ErrorResponse('Booking request not found', 404));
     }
 
     const storage = await Storage.findById(booking.storageId);
     if (!storage) {
-      return res.status(404).json({ message: 'Associated storage not found' });
+      return next(new ErrorResponse('Associated storage not found', 404));
     }
 
     if (req.user.role !== 'admin' && storage.ownerId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to update this booking' });
+      return next(new ErrorResponse('Not authorized to update this booking', 403));
     }
 
     const previousStatus = booking.status;
     booking.status = status;
     await booking.save();
 
-    // Adjust capacity if accepted or completed
+    // Adjust capacity dynamically
     if (previousStatus !== 'accepted' && status === 'accepted') {
       storage.availableCapacity = Math.max(0, storage.availableCapacity - booking.quantity);
       if (storage.availableCapacity === 0) {
@@ -154,8 +157,7 @@ const updateBookingStatus = async (req, res) => {
       booking,
     });
   } catch (error) {
-    console.error('updateBookingStatus error:', error);
-    res.status(500).json({ message: 'Server error updating booking status' });
+    next(error);
   }
 };
 

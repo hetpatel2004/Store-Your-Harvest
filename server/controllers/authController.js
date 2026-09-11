@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const ErrorResponse = require('../utils/errorResponse');
 
+// Generate JWT token
 const generateToken = (id) => {
   return jwt.sign(
     { id },
@@ -9,36 +11,38 @@ const generateToken = (id) => {
   );
 };
 
-// @desc    Register a new user (farmer or storage owner)
+// @desc    Register a new user (Cold Storage Owner or Farmer)
 // @route   POST /api/auth/register
 // @access  Public
-const register = async (req, res) => {
+const register = async (req, res, next) => {
   try {
-    const { name, email, phone, password, role, city, address } = req.body;
+    const { name, email, phone, password, role = 'owner', city, address } = req.body;
 
     if (!name || !email || !phone || !password) {
-      return res.status(400).json({ message: 'Please provide all required fields' });
+      return next(new ErrorResponse('Please provide all required fields (Name, Email, Phone, Password)', 400));
     }
 
-    const userExists = await User.findOne({ email: email.toLowerCase() });
+    const userExists = await User.findOne({ email: email.toLowerCase().trim() });
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists with this email' });
+      return next(new ErrorResponse('An account with this email is already registered. Please log in.', 400));
     }
+
+    // Role cannot be set to 'admin' via public registration
+    const assignedRole = role === 'admin' ? 'owner' : (role || 'owner');
 
     const user = await User.create({
-      name,
-      email: email.toLowerCase(),
-      phone,
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      phone: phone.trim(),
       password,
-      role: role || 'farmer',
+      role: assignedRole,
       city: city || 'Ahmedabad',
       address: address || '',
     });
 
-    const token = generateToken(user._id);
-
     res.status(201).json({
       success: true,
+      message: 'Registration successful! Please sign in with your email and password to access your facility dashboard.',
       user: {
         _id: user._id,
         name: user.name,
@@ -47,39 +51,39 @@ const register = async (req, res) => {
         role: user.role,
         city: user.city,
       },
-      token,
     });
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ message: error.message || 'Server error during registration' });
+    next(error);
   }
 };
 
-// @desc    Authenticate user & get token
+// @desc    Authenticate user & return JWT token
 // @route   POST /api/auth/login
 // @access  Public
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Please provide email and password' });
+      return next(new ErrorResponse('Please provide both email and password to log in', 400));
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return next(new ErrorResponse('Invalid email or password credentials', 401));
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return next(new ErrorResponse('Invalid email or password credentials', 401));
     }
 
+    // Sign secure JWT token
     const token = generateToken(user._id);
 
     res.json({
       success: true,
+      message: 'Logged in successfully',
       user: {
         _id: user._id,
         name: user.name,
@@ -91,59 +95,24 @@ const login = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: error.message || 'Server error during login' });
+    next(error);
   }
 };
 
-// @desc    Demo 1-click login for hackathon testing
-// @route   POST /api/auth/demo-login
-// @access  Public
-const demoLogin = async (req, res) => {
-  try {
-    const { role } = req.body; // 'admin', 'owner', 'farmer'
-    let targetEmail = 'ramesh@farmer.com';
-
-    if (role === 'admin') {
-      targetEmail = 'admin@agricold.in';
-    } else if (role === 'owner') {
-      targetEmail = 'rajesh@patelcoldstorage.com';
-    }
-
-    const user = await User.findOne({ email: targetEmail });
-    if (!user) {
-      return res.status(404).json({ message: `Demo user for role ${role} not found` });
-    }
-
-    const token = generateToken(user._id);
-
-    res.json({
-      success: true,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        city: user.city,
-      },
-      token,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message || 'Server error during demo login' });
-  }
-};
-
-// @desc    Get current user profile
+// @desc    Get currently authenticated user profile
 // @route   GET /api/auth/me
-// @access  Private
-const getMe = async (req, res) => {
+// @access  Private (Protected by JWT)
+const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
     res.json({ success: true, user });
   } catch (error) {
-    res.status(500).json({ message: 'Server error fetching user profile' });
+    next(error);
   }
 };
 
-module.exports = { register, login, demoLogin, getMe };
+module.exports = {
+  register,
+  login,
+  getMe,
+};

@@ -31,6 +31,7 @@ export const AuthProvider = ({ children }) => {
     checkUser();
   }, [token]);
 
+  // Login: receives email & password, validates, stores JWT token
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
     if (res.data.success) {
@@ -42,26 +43,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Register: owner registers first, must then login with their credentials
   const register = async (userData) => {
     const res = await api.post('/auth/register', userData);
-    if (res.data.success) {
-      setUser(res.data.user);
-      setToken(res.data.token);
-      localStorage.setItem('agricold_user', JSON.stringify(res.data.user));
-      localStorage.setItem('agricold_token', res.data.token);
-      return res.data;
-    }
-  };
-
-  const demoLogin = async (role) => {
-    const res = await api.post('/auth/demo-login', { role });
-    if (res.data.success) {
-      setUser(res.data.user);
-      setToken(res.data.token);
-      localStorage.setItem('agricold_user', JSON.stringify(res.data.user));
-      localStorage.setItem('agricold_token', res.data.token);
-      return res.data;
-    }
+    return res.data;
   };
 
   const logout = () => {
@@ -79,7 +64,6 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         register,
-        demoLogin,
         logout,
         isAuthenticated: !!user,
         isFarmer: user?.role === 'farmer',

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../services/api';
 import {
   PhoneCall,
   Mail,
@@ -22,11 +23,21 @@ export default function ContactPage() {
     city: 'Ahmedabad',
     message: '',
   });
-  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    setErrorMessage('');
+    setSubmitting(true);
+    try {
+      await api.post('/contact', formData);
+      setSubmitted(true);
+    } catch (err) {
+      setErrorMessage(err.response?.data?.message || 'Failed to send inquiry. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

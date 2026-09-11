@@ -134,9 +134,9 @@ export default function LandingPage() {
                 <ArrowRight className="w-5 h-5 text-slate-950 group-hover:translate-x-1 transition-transform shrink-0" />
               </Link>
 
-              {/* Role 2: Storage Owner (Login & Registration Portal) */}
+              {/* Role 2: Storage Owner (Register then Login Portal) */}
               <Link
-                to="/auth?role=owner"
+                to="/auth?tab=register"
                 className="card-3d bg-white/10 hover:bg-white/15 p-5 rounded-3xl text-white text-left shadow-xl border border-white/20 backdrop-blur-md flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-3.5">
