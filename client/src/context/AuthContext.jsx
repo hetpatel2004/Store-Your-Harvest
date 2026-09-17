@@ -10,6 +10,7 @@ export const AuthProvider = ({ children }) => {
   });
   const [token, setToken] = useState(() => localStorage.getItem('agricold_token'));
   const [loading, setLoading] = useState(true);
+  const [isSessionValid, setIsSessionValid] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -19,6 +20,9 @@ export const AuthProvider = ({ children }) => {
           if (res.data.success) {
             setUser(res.data.user);
             localStorage.setItem('agricold_user', JSON.stringify(res.data.user));
+            setIsSessionValid(true);
+          } else {
+            logout();
           }
         } catch (err) {
           console.error('Session validation error:', err);
@@ -26,6 +30,7 @@ export const AuthProvider = ({ children }) => {
         }
       }
       setLoading(false);
+      setIsSessionValid(!token);
     };
 
     checkUser();
@@ -39,8 +44,10 @@ export const AuthProvider = ({ children }) => {
       setToken(res.data.token);
       localStorage.setItem('agricold_user', JSON.stringify(res.data.user));
       localStorage.setItem('agricold_token', res.data.token);
+      setIsSessionValid(true);
       return res.data;
     }
+    throw new Error(res.data.message || 'Login failed');
   };
 
   // Register: owner registers first, must then login with their credentials
@@ -49,11 +56,39 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
+  // Forgot password: sends reset link to email
+  const forgotPassword = async (email) => {
+    const res = await api.post('/auth/forgot-password', { email });
+    return res.data;
+  };
+
+  // Reset password with token
+  const resetPassword = async (token, newPassword) => {
+    const res = await api.post('/auth/reset-password', { token, newPassword });
+    return res.data;
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('agricold_user');
     localStorage.removeItem('agricold_token');
+    setIsSessionValid(false);
+  };
+
+  // Role check helpers
+  const hasRole = (role) => user?.role === role;
+  const hasAnyRole = (roles) => roles.includes(user?.role);
+  const canAccessFeature = (feature) => {
+    // Define feature permissions based on role
+    const permissions = {
+      manageStorages: isOwner,
+      viewAdminDashboard: isAdmin,
+      bookStorage: isAuthenticated,
+      addReviews: isAuthenticated,
+      submitInquiries: isAuthenticated,
+    };
+    return permissions[feature];
   };
 
   return (
@@ -62,13 +97,19 @@ export const AuthProvider = ({ children }) => {
         user,
         token,
         loading,
+        isSessionValid,
         login,
         register,
+        forgotPassword,
+        resetPassword,
         logout,
         isAuthenticated: !!user,
-        isFarmer: user?.role === 'farmer',
-        isOwner: user?.role === 'owner',
-        isAdmin: user?.role === 'admin',
+        isFarmer: hasRole('farmer'),
+        isOwner: hasRole('owner'),
+        isAdmin: hasRole('admin'),
+        hasRole,
+        hasAnyRole,
+        canAccessFeature,
       }}
     >
       {children}
