@@ -51,6 +51,15 @@ const createBooking = async (req, res, next) => {
       distanceKm,
     });
 
+    // Check if storage will be full after this booking
+    const newAvailableCapacity = storage.availableCapacity - qty;
+    let availabilityStatus = 'Available';
+    if (newAvailableCapacity <= 0) {
+      availabilityStatus = 'Full';
+    } else if (newAvailableCapacity < storage.totalCapacity * 0.2) {
+      availabilityStatus = 'Limited';
+    }
+
     const booking = await Booking.create({
       farmerId: req.user ? req.user._id : null,
       farmerName,
@@ -73,10 +82,16 @@ const createBooking = async (req, res, next) => {
       status: 'pending',
     });
 
+    // Update storage availability
+    storage.availableCapacity = newAvailableCapacity;
+    storage.availability = availabilityStatus;
+    await storage.save();
+
     res.status(201).json({
       success: true,
       message: 'Storage request sent successfully. Facility owner will review and confirm.',
       booking,
+      storageAvailability: availabilityStatus,
     });
   } catch (error) {
     next(error);
