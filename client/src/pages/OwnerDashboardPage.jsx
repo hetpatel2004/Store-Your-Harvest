@@ -642,7 +642,7 @@ export default function OwnerDashboardPage() {
                     required
                     value={newFacility.acceptedCrops}
                     onChange={(e) => setNewFacility({ ...newFacility, acceptedCrops: e.target.value })}
-                    placeholder="Tomato, Potato, Onion, Mango, Apple, Banana, Grapes, Chilli, Carrot, Maize, Wheat, Soybean, Pulses"
+                    placeholder="Tomato, Potato, Onion, Mango, Apple, Banana, Grapes, Chilli, Carrot, Maize, Wheat, Soybean, Pulses, Brinjal, Cauliflower, Cabbage, Okra, Pumpkin"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
                   />
                 </div>

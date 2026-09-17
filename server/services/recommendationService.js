@@ -16,6 +16,12 @@ const CROP_STORAGE_PROFILES = {
   Wheat: { tempMin: 13, tempMax: 18, humidity: '60-70%', shelfLife: '6-8 months', defaultRate: 1.2 },
   Soybean: { tempMin: 15, tempMax: 20, humidity: '55-65%', shelfLife: '5-7 months', defaultRate: 1.3 },
   Pulses: { tempMin: 10, tempMax: 15, humidity: '60-70%', shelfLife: '4-6 months', defaultRate: 1.4 },
+  // Additional common vegetables
+  Brinjal: { tempMin: 8, tempMax: 12, humidity: '85-90%', shelfLife: '2-3 weeks', defaultRate: 2.6 },
+  Cauliflower: { tempMin: 0, tempMax: 4, humidity: '85-95%', shelfLife: '2-3 weeks', defaultRate: 3.0 },
+  Cabbage: { tempMin: 0, tempMax: 5, humidity: '80-90%', shelfLife: '3-4 months', defaultRate: 2.4 },
+  Okra: { tempMin: 8, tempMax: 12, humidity: '85-95%', shelfLife: '1-2 weeks', defaultRate: 3.5 },
+  Pumpkin: { tempMin: 7, tempMax: 10, humidity: '80-85%', shelfLife: '2-3 months', defaultRate: 1.8 },
 };
 
 /**
