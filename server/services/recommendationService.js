@@ -22,6 +22,33 @@ const CROP_STORAGE_PROFILES = {
   Cabbage: { tempMin: 0, tempMax: 5, humidity: '80-90%', shelfLife: '3-4 months', defaultRate: 2.4 },
   Okra: { tempMin: 8, tempMax: 12, humidity: '85-95%', shelfLife: '1-2 weeks', defaultRate: 3.5 },
   Pumpkin: { tempMin: 7, tempMax: 10, humidity: '80-85%', shelfLife: '2-3 months', defaultRate: 1.8 },
+  // Additional fruits
+  Papaya: { tempMin: 7, tempMax: 10, humidity: '85-90%', shelfLife: '2-3 weeks', defaultRate: 2.5 },
+  Watermelon: { tempMin: 7, tempMax: 10, humidity: '80-85%', shelfLife: '1-2 weeks', defaultRate: 1.5 },
+  Muskmelon: { tempMin: 7, tempMax: 10, humidity: '80-90%', shelfLife: '1-2 weeks', defaultRate: 2.0 },
+  Pomegranate: { tempMin: 5, tempMax: 10, humidity: '85-90%', shelfLife: '2-3 months', defaultRate: 3.5 },
+  Guava: { tempMin: 5, tempMax: 8, humidity: '85-95%', shelfLife: '1-2 weeks', defaultRate: 3.0 },
+  Orange: { tempMin: 4, tempMax: 8, humidity: '85-90%', shelfLife: '2-3 months', defaultRate: 3.0 },
+  Lemon: { tempMin: 4, tempMax: 10, humidity: '85-90%', shelfLife: '1-3 weeks', defaultRate: 2.8 },
+  // Additional vegetables
+  BottleGourd: { tempMin: 10, tempMax: 15, humidity: '80-85%', shelfLife: '1-2 weeks', defaultRate: 1.8 },
+  RidgeGourd: { tempMin: 10, tempMax: 15, humidity: '75-85%', shelfLife: '1-2 weeks', defaultRate: 1.6 },
+  BitterGourd: { tempMin: 10, tempMax: 15, humidity: '80-85%', shelfLife: '1 week', defaultRate: 2.5 },
+  SnakeGourd: { tempMin: 10, tempMax: 15, humidity: '75-85%', shelfLife: '1 week', defaultRate: 1.8 },
+  GreenBeans: { tempMin: 8, tempMax: 12, humidity: '85-95%', shelfLife: '1 week', defaultRate: 3.0 },
+  ClusterBeans: { tempMin: 8, tempMax: 12, humidity: '80-90%', shelfLife: '1 week', defaultRate: 2.8 },
+  Peas: { tempMin: 0, tempMax: 5, humidity: '80-90%', shelfLife: '2-3 months', defaultRate: 2.2 },
+  Spinach: { tempMin: 0, tempMax: 5, humidity: '90-98%', shelfLife: '1-2 weeks', defaultRate: 3.5 },
+  Fenugreek: { tempMin: 10, tempMax: 15, humidity: '65-75%', shelfLife: '1 week', defaultRate: 3.0 },
+  Mint: { tempMin: 5, tempMax: 10, humidity: '85-95%', shelfLife: '1 week', defaultRate: 4.0 },
+  CurryLeaves: { tempMin: 10, tempMax: 15, humidity: '65-75%', shelfLife: '1 week', defaultRate: 5.0 },
+  Drumsticks: { tempMin: 8, tempMax: 12, humidity: '80-85%', shelfLife: '1-2 weeks', defaultRate: 3.2 },
+  // Additional grains & crops
+  Rice: { tempMin: 13, tempMax: 18, humidity: '60-70%', shelfLife: '6-12 months', defaultRate: 1.0 },
+  Barley: { tempMin: 10, tempMax: 15, humidity: '60-70%', shelfLife: '6-8 months', defaultRate: 0.9 },
+  Jowar: { tempMin: 15, tempMax: 20, humidity: '55-65%', shelfLife: '5-7 months', defaultRate: 1.1 },
+  Bajra: { tempMin: 20, tempMax: 25, humidity: '50-60%', shelfLife: '4-6 months', defaultRate: 0.8 },
+  Ragi: { tempMin: 15, tempMax: 20, humidity: '60-65%', shelfLife: '6-8 months', defaultRate: 1.2 },
 };
 
 /**

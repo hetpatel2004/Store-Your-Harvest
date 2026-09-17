@@ -103,7 +103,7 @@ const storageSchema = new mongoose.Schema({
   },
   powerBackup: {
     type: Boolean,
-    default: true,
+    default: false,
   },
   cctvMonitoring: {
     type: Boolean,
