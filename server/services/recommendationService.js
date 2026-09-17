@@ -1,5 +1,5 @@
 const { calculateHaversineDistance, getCityCoordinates } = require('../utils/geoUtils');
-const { calculateTotalCost } = require('./costCalculatorService');
+const { calculateTotalCost, compareStorageCosts, calculateSavings } = require('./costCalculatorService');
 
 // Optimal physiological storage thresholds for major Indian crops
 const CROP_STORAGE_PROFILES = {
@@ -12,6 +12,10 @@ const CROP_STORAGE_PROFILES = {
   Grapes: { tempMin: -1, tempMax: 0, humidity: '90-95%', shelfLife: '2-4 months', defaultRate: 3.2 },
   Chilli: { tempMin: 7, tempMax: 10, humidity: '90-95%', shelfLife: '3-5 weeks', defaultRate: 2.8 },
   Carrot: { tempMin: 0, tempMax: 2, humidity: '95-98%', shelfLife: '4-6 months', defaultRate: 2.2 },
+  Maize: { tempMin: 10, tempMax: 15, humidity: '70-80%', shelfLife: '3-5 months', defaultRate: 1.5 },
+  Wheat: { tempMin: 13, tempMax: 18, humidity: '60-70%', shelfLife: '6-8 months', defaultRate: 1.2 },
+  Soybean: { tempMin: 15, tempMax: 20, humidity: '55-65%', shelfLife: '5-7 months', defaultRate: 1.3 },
+  Pulses: { tempMin: 10, tempMax: 15, humidity: '60-70%', shelfLife: '4-6 months', defaultRate: 1.4 },
 };
 
 /**
@@ -27,6 +31,7 @@ const computeRecommendationScore = (storage, requirements = {}) => {
     userLng,
     userCity = 'Ahmedabad',
     durationDays = 30,
+    season = 'normal',
   } = requirements;
 
   let score = 0;
@@ -132,6 +137,29 @@ const computeRecommendationScore = (storage, requirements = {}) => {
     score += 4;
   }
 
+  // 6. Seasonal Pricing Compatibility (Max 10 points) - NEW
+  const cropProfile = CROP_STORAGE_PROFILES[crop] || {};
+  const baseRate = cropProfile.defaultRate || 2.0;
+  const pricePerKg = Number(storage.pricePerKg) || baseRate;
+  const seasonalAdjustment = season === 'peak' ? 1.2 : season === 'off' ? 0.9 : 1.0;
+  const adjustedRate = pricePerKg * seasonalAdjustment;
+  if (adjustedRate <= baseRate * 1.1) {
+    score += 10;
+    explanations.push(`Seasonal pricing is favorable`);
+  } else if (adjustedRate <= baseRate * 1.3) {
+    score += 6;
+  }
+
+  // 7. Storage Features Bonus (Max 5 points) - NEW
+  if (storage.powerBackup) {
+    score += 3;
+    explanations.push('Power backup available');
+  }
+  if (storage.cctvMonitoring) {
+    score += 2;
+    explanations.push('CCTV monitored for security');
+  }
+
   // Bound match score between 48% and 98%
   const matchScore = Math.min(Math.max(Math.round(score), 48), 98);
 
@@ -143,7 +171,17 @@ const computeRecommendationScore = (storage, requirements = {}) => {
     handlingCharge: storage.handlingCharge,
     transportRatePerKm: storage.transportRatePerKm,
     distanceKm: distance,
+    seasonFactor: season === 'peak' ? 1.2 : season === 'off' ? 0.9 : 1.0,
+    storageTypeFactor: 1.0,
   });
+
+  // Calculate savings compared to default market rate
+  const savings = calculateSavings(
+    costBreakdown.storageRatePerKg,
+    costBreakdown.storageRatePerKg,
+    qty,
+    durationDays
+  );
 
   return {
     matchScore,
@@ -152,10 +190,33 @@ const computeRecommendationScore = (storage, requirements = {}) => {
     matchExplanation: explanations.slice(0, 3).join(' • '),
     distance,
     costBreakdown,
+    savings,
+    seasonalAdjustment: season === 'peak' ? 'Peak season rates apply' : 'Normal rates',
+    features: {
+      powerBackup: storage.powerBackup,
+      cctvMonitoring: storage.cctvMonitoring,
+    },
   };
+};
+
+/**
+ * Gets recommendations for multiple storages filtered by criteria
+ * @param {Array} storages Storage facility documents
+ * @param {Object} requirements Search requirements
+ */
+const getMultipleRecommendations = (storages, requirements) => {
+  return storages
+    .map((storage) => ({
+      ...storage,
+      score: computeRecommendationScore(storage, requirements),
+    }))
+    .sort((a, b) => b.score.matchScore - a.score.matchScore)
+    .filter((item) => item.score.matchScore >= 50) // Minimum threshold
+    .slice(0, 10); // Top 10 results
 };
 
 module.exports = {
   CROP_STORAGE_PROFILES,
   computeRecommendationScore,
+  getMultipleRecommendations,
 };

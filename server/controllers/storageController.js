@@ -302,6 +302,183 @@ const getMyFacilities = async (req, res, next) => {
   }
 };
 
+// @desc    Get recommended storages with scores
+// @route   GET /api/storages/recommended
+// @access  Public
+const getRecommendedStorages = async (req, res, next) => {
+  try {
+    const {
+      crop,
+      quantity,
+      city,
+      lat,
+      lng,
+      duration,
+      season = 'normal',
+    } = req.query;
+
+    let query = { status: 'approved' };
+
+    if (crop) {
+      query.acceptedCrops = crop;
+    }
+
+    const storages = await Storage.find(query).populate('ownerId', 'name phone email');
+
+    const farmerReqs = {
+      crop: crop || '',
+      quantity: Number(quantity) || 500,
+      userCity: city || 'Ahmedabad',
+      userLat: lat ? Number(lat) : undefined,
+      userLng: lng ? Number(lng) : undefined,
+      durationDays: Number(duration) || 30,
+      season,
+    };
+
+    // Calculate smart recommendation scores and cost breakdowns
+    const enrichedStorages = storages.map((storage) => {
+      const storageObj = storage.toObject();
+      const recommendation = computeRecommendationScore(storageObj, farmerReqs);
+      return {
+        ...storageObj,
+        ...recommendation,
+      };
+    });
+
+    // Sort by recommendation score (highest first)
+    enrichedStorages.sort((a, b) => b.matchScore - a.matchScore);
+
+    res.json({
+      success: true,
+      count: enrichedStorages.length,
+      searchCriteria: farmerReqs,
+      storages: enrichedStorages,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Compare specific storage with others
+// @route   GET /api/storages/compare/:id
+// @access  Public
+const compareStorages = async (req, res, next) => {
+  try {
+    const targetStorageId = req.params.id;
+
+    // Get all approved storages
+    const storages = await Storage.find({ status: 'approved' }).populate('ownerId', 'name phone email');
+
+    // Find the target storage
+    const targetStorage = storages.find(
+      (s) => s._id.toString() === targetStorageId
+    );
+
+    if (!targetStorage) {
+      return next(new ErrorResponse('Storage facility not found', 404));
+    }
+
+    // Get query parameters for comparison
+    const {
+      crop,
+      quantity,
+      city,
+      lat,
+      lng,
+    } = req.query;
+
+    const farmerReqs = {
+      crop: crop || '',
+      quantity: Number(quantity) || 500,
+      userCity: city || 'Ahmedabad',
+      userLat: lat ? Number(lat) : undefined,
+      userLng: lng ? Number(lng) : undefined,
+    };
+
+    // Calculate scores for all storages
+    const comparedStorages = storages.map((storage) => {
+      const storageObj = storage.toObject();
+      const recommendation = computeRecommendationScore(storageObj, farmerReqs);
+      return {
+        ...storageObj,
+        ...recommendation,
+      };
+    });
+
+    // Sort by match score (highest first)
+    comparedStorages.sort((a, b) => b.matchScore - a.matchScore);
+
+    res.json({
+      success: true,
+      targetStorageId,
+      searchCriteria: farmerReqs,
+      comparedStorages,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get storage analytics (admin only)
+// @route   GET /api/storages/analytics
+// @access  Private (Admin)
+const getStorageAnalytics = async (req, res, next) => {
+  try {
+    const totalStorages = await Storage.countDocuments({ status: 'approved' });
+    const verifiedStorages = await Storage.countDocuments({ status: 'approved', verified: true });
+    const pendingStorages = await Storage.countDocuments({ status: 'pending' });
+    const rejectedStorages = await Storage.countDocuments({ status: 'rejected' });
+
+    // Storage status distribution
+    const statusDistribution = await Storage.aggregate([
+      { $match: { status: { $in: ['approved', 'pending', 'rejected'] } } },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]);
+
+    // Crop distribution
+    const cropDistribution = await Storage.aggregate([
+      { $unwind: '$acceptedCrops' },
+      { $group: { _id: '$acceptedCrops', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+    ]);
+
+    // Average rating by status
+    const ratingByStatus = await Storage.aggregate([
+      { $match: { status: 'approved' } },
+      { $group: {
+          _id: '$status',
+          avgRating: { $avg: '$rating' },
+          totalCount: { $sum: 1 },
+        }
+      },
+      { $sort: { avgRating: -1 } },
+    ]);
+
+    // Top 5 recommended storages (by match score potential)
+    const topStorages = await Storage.find({ status: 'approved' })
+      .sort({ rating: -1 })
+      .limit(5)
+      .populate('ownerId', 'name');
+
+    res.json({
+      success: true,
+      analytics: {
+        totalStorages,
+        verifiedStorages,
+        pendingStorages,
+        rejectedStorages,
+        statusDistribution,
+        cropDistribution,
+        ratingByStatus,
+        topStorages,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getStorages,
   getStorageById,
@@ -309,4 +486,7 @@ module.exports = {
   updateStorage,
   deleteStorage,
   getMyFacilities,
+  getRecommendedStorages,
+  compareStorages,
+  getStorageAnalytics,
 };
