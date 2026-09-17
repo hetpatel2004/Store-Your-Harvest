@@ -3,35 +3,6 @@ import api from '../services/api';
 
 const SearchContext = createContext();
 
-export const DEFAULT_CROPS_DATA = {
-  Potato: { tempMin: 3, tempMax: 6, humidity: '90-95%', shelfLife: '6-10 months', defaultRate: 1.8, typicalQty: 2000 },
-  Tomato: { tempMin: 8, tempMax: 13, humidity: '85-90%', shelfLife: '2-4 weeks', defaultRate: 2.5, typicalQty: 500 },
-  Onion: { tempMin: 0, tempMax: 2, humidity: '65-70%', shelfLife: '5-8 months', defaultRate: 2.0, typicalQty: 1500 },
-  Mango: { tempMin: 10, tempMax: 13, humidity: '85-90%', shelfLife: '3-6 weeks', defaultRate: 3.5, typicalQty: 800 },
-  Apple: { tempMin: -1, tempMax: 2, humidity: '90-95%', shelfLife: '6-9 months', defaultRate: 3.0, typicalQty: 1000 },
-  Banana: { tempMin: 13, tempMax: 15, humidity: '90-95%', shelfLife: '2-4 weeks', defaultRate: 2.2, typicalQty: 1200 },
-  Grapes: { tempMin: -1, tempMax: 0, humidity: '90-95%', shelfLife: '2-4 months', defaultRate: 3.2, typicalQty: 600 },
-  Chilli: { tempMin: 7, tempMax: 10, humidity: '90-95%', shelfLife: '3-5 weeks', defaultRate: 2.8, typicalQty: 400 },
-  Carrot: { tempMin: 0, tempMax: 2, humidity: '95-98%', shelfLife: '4-6 months', defaultRate: 2.2, typicalQty: 800 },
-};
-
-// Extended crops data from server knowledge base
-export const EXTENDED_CROPS_DATA = {
-  Potato: { tempMin: 3, tempMax: 6, humidity: '90-95%', shelfLife: '6-10 months', defaultRate: 1.8 },
-  Tomato: { tempMin: 8, tempMax: 13, humidity: '85-90%', shelfLife: '2-4 weeks', defaultRate: 2.5 },
-  Onion: { tempMin: 0, tempMax: 2, humidity: '65-70%', shelfLife: '5-8 months', defaultRate: 2.0 },
-  Mango: { tempMin: 10, tempMax: 13, humidity: '85-90%', shelfLife: '3-6 weeks', defaultRate: 3.5 },
-  Apple: { tempMin: -1, tempMax: 2, humidity: '90-95%', shelfLife: '6-9 months', defaultRate: 3.0 },
-  Banana: { tempMin: 13, tempMax: 15, humidity: '90-95%', shelfLife: '2-4 weeks', defaultRate: 2.2 },
-  Grapes: { tempMin: -1, tempMax: 0, humidity: '90-95%', shelfLife: '2-4 months', defaultRate: 3.2 },
-  Chilli: { tempMin: 7, tempMax: 10, humidity: '90-95%', shelfLife: '3-5 weeks', defaultRate: 2.8 },
-  Carrot: { tempMin: 0, tempMax: 2, humidity: '95-98%', shelfLife: '4-6 months', defaultRate: 2.2 },
-  Maize: { tempMin: 10, tempMax: 15, humidity: '70-80%', shelfLife: '3-5 months', defaultRate: 1.5 },
-  Wheat: { tempMin: 13, tempMax: 18, humidity: '60-70%', shelfLife: '6-8 months', defaultRate: 1.2 },
-  Soybean: { tempMin: 15, tempMax: 20, humidity: '55-65%', shelfLife: '5-7 months', defaultRate: 1.3 },
-  Pulses: { tempMin: 10, tempMax: 15, humidity: '60-70%', shelfLife: '4-6 months', defaultRate: 1.4 },
-};
-
 export const SearchProvider = ({ children }) => {
   const [searchCriteria, setSearchCriteria] = useState({
     crop: 'Tomato',
@@ -43,7 +14,7 @@ export const SearchProvider = ({ children }) => {
     maxDistance: 50,
   });
 
-  const [cropsData, setCropsData] = useState(DEFAULT_CROPS_DATA);
+  const [cropsData, setCropsData] = useState({});
   const [compareList, setCompareList] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -57,23 +28,17 @@ export const SearchProvider = ({ children }) => {
         }
       })
       .catch((err) => {
-        // Fallback to local default crops
-        setCropsData(DEFAULT_CROPS_DATA);
+        // Fallback to empty object - server data will be used when available
       });
   }, []);
 
-  // Enhanced search with all criteria
   const updateSearch = (newCriteria) => {
     setSearchCriteria((prev) => ({
       ...prev,
       ...newCriteria,
     }));
-
-    // Auto-trigger search when criteria change
-    performSearch();
   };
 
-  // Perform search with current criteria
   const performSearch = async () => {
     setIsSearching(true);
     try {
@@ -97,7 +62,6 @@ export const SearchProvider = ({ children }) => {
     }
   };
 
-  // Toggle comparison storage
   const toggleCompare = (storage) => {
     setCompareList((prev) => {
       const exists = prev.find((s) => s._id === storage._id);
@@ -124,18 +88,15 @@ export const SearchProvider = ({ children }) => {
     return compareList.some((s) => s._id === storageId);
   };
 
-  // Get crop profile by name
   const getCropProfile = (cropName) => {
-    return cropsData[cropName] || DEFAULT_CROPS_DATA[cropName] || {};
+    return cropsData[cropName] || {};
   };
 
-  // Calculate storage suitability based on criteria
   const calculateSuitability = (storage, cropName) => {
     const profile = getCropProfile(cropName);
     if (!profile) return 0;
 
     let score = 0;
-    const explanations = [];
 
     // Temperature compatibility
     const tempMin = storage.temperatureMin || 0;
@@ -145,26 +106,16 @@ export const SearchProvider = ({ children }) => {
 
     if (tempMin <= idealMax && tempMax >= idealMin) {
       score += 30;
-      explanations.push('Temperature range matches crop requirements');
     }
 
     // Capacity check
     if (storage.availableCapacity >= searchCriteria.quantity) {
       score += 20;
-      explanations.push('Adequate capacity available');
-    }
-
-    // Distance check
-    const distance = Math.max(searchCriteria.maxDistance - 20, 0);
-    if (true) { // would need user location
-      score += 15;
-      explanations.push('Within acceptable distance');
     }
 
     // Rating check
     if (storage.rating >= 4.5) {
       score += 15;
-      explanations.push('Highly rated facility');
     }
 
     return Math.min(score, 100);
