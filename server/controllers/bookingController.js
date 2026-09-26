@@ -20,6 +20,11 @@ const createBooking = async (req, res, next) => {
       farmerEmail,
       specialRequirements,
       distanceKm = 10,
+      // Extra services selected by farmer
+      extraServices = {},
+      // Farmer registration data (if registering during booking)
+      farmerPassword,
+      registerFarmer = false,
     } = req.body;
 
     if (!storageId || !crop || !quantity || !startDate || !farmerName || !farmerPhone) {
@@ -51,6 +56,26 @@ const createBooking = async (req, res, next) => {
       distanceKm,
     });
 
+    // Calculate extra services cost
+    const EXTRA_SERVICE_COSTS = {
+      cctvMonitoring: 200,
+      transportGoods: 500,
+      insurance: 300,
+      powerBackupConfirmation: 150,
+      expressHandling: 180,
+      preCoolingTreatment: 250,
+      insuranceUpgrade: 100,
+    };
+
+    let extraServicesCost = 0;
+    const selectedExtraServices = {};
+    Object.keys(extraServices).forEach(key => {
+      if (extraServices[key] && EXTRA_SERVICE_COSTS[key]) {
+        selectedExtraServices[key] = true;
+        extraServicesCost += EXTRA_SERVICE_COSTS[key];
+      }
+    });
+
     // Check if storage will be full after this booking
     const newAvailableCapacity = storage.availableCapacity - qty;
     let availabilityStatus = 'Available';
@@ -60,8 +85,32 @@ const createBooking = async (req, res, next) => {
       availabilityStatus = 'Limited';
     }
 
+    // Calculate total cost with extra services
+    const subtotal = costBreakdown.totalCost + extraServicesCost;
+    const tax = Math.round(subtotal * 0.18); // 18% GST
+    const total = subtotal + tax;
+
+    // Handle farmer registration if requested
+    let farmerId = req.user ? req.user._id : null;
+    if (registerFarmer && farmerPassword) {
+      const User = require('../models/User');
+      const existingUser = await User.findOne({ phone: farmerPhone });
+      if (!existingUser) {
+        const newFarmer = await User.create({
+          name: farmerName,
+          phone: farmerPhone,
+          email: farmerEmail || '',
+          password: farmerPassword,
+          role: 'farmer',
+          city: storage.city || 'Ahmedabad',
+          state: storage.state || 'Gujarat',
+        });
+        farmerId = newFarmer._id;
+      }
+    }
+
     const booking = await Booking.create({
-      farmerId: req.user ? req.user._id : null,
+      farmerId,
       farmerName,
       farmerPhone,
       farmerEmail: farmerEmail || (req.user ? req.user.email : ''),
@@ -80,6 +129,23 @@ const createBooking = async (req, res, next) => {
       totalCost: costBreakdown.totalCost,
       distanceKm: costBreakdown.distanceKm,
       status: 'pending',
+      extraServices: {
+        cctvMonitoring: extraServices.cctvMonitoring || false,
+        transportGoods: extraServices.transportGoods || false,
+        insurance: extraServices.insurance || false,
+        powerBackupConfirmation: extraServices.powerBackupConfirmation || false,
+        expressHandling: extraServices.expressHandling || false,
+        preCoolingTreatment: extraServices.preCoolingTreatment || false,
+        insuranceUpgrade: extraServices.insuranceUpgrade || false,
+      },
+      bill: {
+        subtotal,
+        extraServicesCost,
+        tax,
+        total,
+        paymentStatus: 'pending',
+        items: billItems,
+      },
     });
 
     // Update storage availability

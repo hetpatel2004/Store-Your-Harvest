@@ -467,15 +467,24 @@ export default function StorageResultsPage() {
                   No storages matching active filter constraints
                 </h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Try broadening your distance slider or resetting storage price filters to view facilities across neighboring Gujarat districts.
+                  Try broadening your distance slider (up to 80 km), resetting the storage price filter (₹1.50-₹4.00/kg/mo), or selecting 'All Gujarat' from the location dropdown to view more facilities across the state.
                 </p>
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-xs shadow-md"
-                >
-                  Reset All Filters
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2 pt-3">
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="flex-1 py-2 rounded-xl bg-emerald-700 text-white font-bold text-xs shadow-md hover:bg-emerald-600 transition-colors"
+                  >
+                    Reset All Filters
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="flex-1 py-2 rounded-xl bg-slate-600 text-white font-bold text-xs shadow-md hover:bg-slate-500 transition-colors"
+                  >
+                    Apply Current Filters
+                  </button>
+                </div>
               </div>
             ) : (
               storages.map((storage) => (

@@ -35,6 +35,10 @@ const getStorages = async (req, res, next) => {
       query.pricePerKg = { $lte: Number(maxPrice) };
     }
 
+    if (city && city !== 'All Gujarat') {
+      query.city = city;
+    }
+
     const storages = await Storage.find(query).populate('ownerId', 'name phone email');
 
     const farmerReqs = {

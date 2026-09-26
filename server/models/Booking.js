@@ -79,6 +79,31 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  // Extra services selected by farmer
+  extraServices: {
+    cctvMonitoring: { type: Boolean, default: false },
+    transportGoods: { type: Boolean, default: false },
+    insurance: { type: Boolean, default: false },
+    powerBackupConfirmation: { type: Boolean, default: false },
+    expressHandling: { type: Boolean, default: false },
+    preCoolingTreatment: { type: Boolean, default: false },
+    insuranceUpgrade: { type: Boolean, default: false },
+  },
+  // Bill details
+  bill: {
+    generatedAt: Date,
+    subtotal: Number,
+    extraServicesCost: Number,
+    tax: Number,
+    total: Number,
+    paymentStatus: { type: String, enum: ['pending', 'partial', 'paid', 'refunded'], default: 'pending' },
+    items: [{
+      description: String,
+      quantity: Number,
+      unitPrice: Number,
+      total: Number,
+    }],
+  },
   status: {
     type: String,
     enum: ['pending', 'accepted', 'rejected', 'completed'],
