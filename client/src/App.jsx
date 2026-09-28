@@ -9,13 +9,17 @@ import StorageResultsPage from './pages/StorageResultsPage';
 import StorageDetailPage from './pages/StorageDetailPage';
 import OwnerDashboardPage from './pages/OwnerDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import FarmerDashboardPage from './pages/FarmerDashboardPage';
 import AuthPage from './pages/AuthPage';
 import TransportComparePage from './pages/TransportComparePage';
 
 export default function App() {
   const location = useLocation();
 
-  const isDashboard = location.pathname.startsWith('/owner') || location.pathname.startsWith('/admin');
+  const isDashboard =
+    location.pathname.startsWith('/owner') ||
+    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/farmer');
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50">
@@ -28,6 +32,8 @@ export default function App() {
           <Route path="/storages" element={<StorageResultsPage />} />
           <Route path="/storages/:id" element={<StorageDetailPage />} />
           <Route path="/transport" element={<TransportComparePage />} />
+          <Route path="/farmer" element={<FarmerDashboardPage />} />
+          <Route path="/farmer-dashboard" element={<FarmerDashboardPage />} />
           <Route path="/owner" element={<OwnerDashboardPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/auth" element={<AuthPage />} />

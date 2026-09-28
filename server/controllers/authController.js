@@ -40,9 +40,12 @@ const register = async (req, res, next) => {
       address: address || '',
     });
 
+    const token = generateToken(user._id);
+
     res.status(201).json({
       success: true,
-      message: 'Registration successful! Please sign in with your email and password to access your facility dashboard.',
+      message: 'Registration successful!',
+      token,
       user: {
         _id: user._id,
         name: user.name,
@@ -65,17 +68,34 @@ const login = async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return next(new ErrorResponse('Please provide both email and password to log in', 400));
+      return next(new ErrorResponse('Please provide email/phone and password to log in', 400));
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const identifier = email.trim();
+    // Allow login by email or phone number
+    const user = await User.findOne({
+      $or: [
+        { email: identifier.toLowerCase() },
+        { phone: identifier },
+      ],
+    });
+
     if (!user) {
-      return next(new ErrorResponse('Invalid email or password credentials', 401));
+      return next(new ErrorResponse('Invalid email/phone or password credentials', 401));
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return next(new ErrorResponse('Invalid email or password credentials', 401));
+      return next(new ErrorResponse('Invalid email/phone or password credentials', 401));
+    }
+
+    if (user.isBanned) {
+      return next(
+        new ErrorResponse(
+          `Your account has been suspended by the platform administrator. Reason: ${user.banReason || 'Administrative suspension.'}`,
+          403
+        )
+      );
     }
 
     // Sign secure JWT token
@@ -91,6 +111,7 @@ const login = async (req, res, next) => {
         phone: user.phone,
         role: user.role,
         city: user.city,
+        isBanned: user.isBanned || false,
       },
       token,
     });

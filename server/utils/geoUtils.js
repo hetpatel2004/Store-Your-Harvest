@@ -12,6 +12,25 @@ const GUJARAT_CITY_COORDINATES = {
   rajkot: { lat: 22.3039, lng: 70.8022 },
   vadodara: { lat: 22.3072, lng: 73.1812 },
   surat: { lat: 21.1702, lng: 72.8311 },
+  nadiad: { lat: 22.6916, lng: 72.8634 },
+  deesa: { lat: 24.2585, lng: 72.1814 },
+  palanpur: { lat: 24.1724, lng: 72.4346 },
+  himatnagar: { lat: 23.5977, lng: 72.9698 },
+  gondal: { lat: 21.9619, lng: 70.7923 },
+  morbi: { lat: 22.8120, lng: 70.8236 },
+  junagadh: { lat: 21.5222, lng: 70.4579 },
+  bhavnagar: { lat: 21.7645, lng: 72.1519 },
+  jamnagar: { lat: 22.4707, lng: 70.0577 },
+  bharuch: { lat: 21.7051, lng: 72.9959 },
+  amreli: { lat: 21.6032, lng: 71.2221 },
+  surendranagar: { lat: 22.7275, lng: 71.6370 },
+  patan: { lat: 23.8493, lng: 72.1266 },
+  modasa: { lat: 23.4632, lng: 73.2984 },
+  botad: { lat: 22.1704, lng: 71.6664 },
+  dahod: { lat: 22.8340, lng: 74.2554 },
+  godhra: { lat: 22.7766, lng: 73.6149 },
+  navsari: { lat: 20.9467, lng: 72.9520 },
+  valsad: { lat: 20.5992, lng: 72.9342 },
 };
 
 /**
@@ -47,8 +66,38 @@ const getCityCoordinates = (cityName) => {
   return GUJARAT_CITY_COORDINATES[normalized] || GUJARAT_CITY_COORDINATES.ahmedabad;
 };
 
+/**
+ * Resolves realistic road distance in km between an entered location/address string and a storage facility
+ */
+const resolveDistanceKm = (locationText, storageLat, storageLng, storageCity = 'Ahmedabad') => {
+  if (!locationText || typeof locationText !== 'string' || !locationText.trim()) {
+    return 10; // default fallback
+  }
+
+  const textLower = locationText.toLowerCase();
+  const cityKeys = Object.keys(GUJARAT_CITY_COORDINATES);
+  const matchedKey = cityKeys.find((key) => textLower.includes(key));
+
+  const sLat = Number(storageLat) || getCityCoordinates(storageCity).lat;
+  const sLng = Number(storageLng) || getCityCoordinates(storageCity).lng;
+
+  if (matchedKey) {
+    const userCoords = GUJARAT_CITY_COORDINATES[matchedKey];
+    const directKm = calculateHaversineDistance(userCoords.lat, userCoords.lng, sLat, sLng);
+    const roadKm = Math.round(directKm * 1.25);
+    return Math.max(5, roadKm);
+  }
+
+  if (textLower.includes('apmc') || textLower.includes('mandi') || textLower.includes('market')) {
+    return 8;
+  }
+
+  return 12;
+};
+
 module.exports = {
   GUJARAT_CITY_COORDINATES,
   calculateHaversineDistance,
   getCityCoordinates,
+  resolveDistanceKm,
 };

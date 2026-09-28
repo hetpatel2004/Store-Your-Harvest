@@ -82,7 +82,20 @@ const bookingSchema = new mongoose.Schema({
   // Extra services selected by farmer
   extraServices: {
     cctvMonitoring: { type: Boolean, default: false },
+    cctvDays: { type: Number, default: 0 },
+    cctvOption: { type: String, default: 'always' }, // 'always' or 'custom'
+    cctvCost: { type: Number, default: 0 },
     transportGoods: { type: Boolean, default: false },
+    transportMode: { type: String, enum: ['none', 'pickup', 'drop', 'both'], default: 'none' },
+    pickupDistanceKm: { type: Number, default: 0 },
+    dropDistanceKm: { type: Number, default: 0 },
+    pickupWeightKg: { type: Number, default: 0 },
+    dropWeightKg: { type: Number, default: 0 },
+    pickupAddress: { type: String, default: '' },
+    dropAddress: { type: String, default: '' },
+    pickupCost: { type: Number, default: 0 },
+    dropCost: { type: Number, default: 0 },
+    transportCost: { type: Number, default: 0 },
     insurance: { type: Boolean, default: false },
     powerBackupConfirmation: { type: Boolean, default: false },
     expressHandling: { type: Boolean, default: false },
@@ -91,12 +104,15 @@ const bookingSchema = new mongoose.Schema({
   },
   // Bill details
   bill: {
-    generatedAt: Date,
+    generatedAt: { type: Date, default: Date.now },
     subtotal: Number,
     extraServicesCost: Number,
     tax: Number,
     total: Number,
     paymentStatus: { type: String, enum: ['pending', 'partial', 'paid', 'refunded'], default: 'pending' },
+    paymentMethod: { type: String, default: '' },
+    transactionId: { type: String, default: '' },
+    paymentDate: { type: Date, default: null },
     items: [{
       description: String,
       quantity: Number,

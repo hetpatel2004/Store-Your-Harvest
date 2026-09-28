@@ -70,17 +70,16 @@ app.use(errorHandler);
 
 // Start server and seed database
 const startServer = async () => {
+  app.listen(PORT, () => {
+    console.log(`🚀 AgriCold Connect API Server running on port ${PORT}`);
+    console.log(`🌾 API Endpoints available at: http://localhost:${PORT}/api`);
+  });
+
   try {
     await connectDB();
     await seedDatabase();
-
-    app.listen(PORT, () => {
-      console.log(`🚀 AgriCold Connect API Server running on port ${PORT}`);
-      console.log(`🌾 API Endpoints available at: http://localhost:${PORT}/api`);
-    });
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    console.error('Database initialization notice:', error.message);
   }
 };
 

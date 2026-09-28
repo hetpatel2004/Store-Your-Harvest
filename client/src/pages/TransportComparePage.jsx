@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import {
   Truck,
   Ship,
@@ -17,17 +18,29 @@ import {
   Wheat,
   SlidersHorizontal,
   ChevronRight,
-  BadgeAlert
+  BadgeAlert,
+  ArrowLeft,
+  Warehouse,
 } from 'lucide-react';
 
 export default function TransportComparePage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+
+  const paramCrop = searchParams.get('crop');
+  const paramQty = searchParams.get('quantity');
+  const paramCity = searchParams.get('pickupCity');
+  const paramDist = searchParams.get('distance');
+  const bookingId = searchParams.get('bookingId');
+
   const [serviceType, setServiceType] = useState('all');
-  const [crop, setCrop] = useState('Wheat');
-  const [quantityKg, setQuantityKg] = useState(3000);
-  const [pickupCity, setPickupCity] = useState('Sanand');
+  const [crop, setCrop] = useState(paramCrop || 'Wheat');
+  const [quantityKg, setQuantityKg] = useState(paramQty ? Number(paramQty) : 3000);
+  const [pickupCity, setPickupCity] = useState(paramCity || user?.city || 'Sanand');
   const [destinationType, setDestinationType] = useState('storage');
   const [targetPort, setTargetPort] = useState('Mundra Port (APSEZ)');
-  const [distanceKm, setDistanceKm] = useState(35);
+  const [distanceKm, setDistanceKm] = useState(paramDist ? Number(paramDist) : 35);
 
   const [loading, setLoading] = useState(false);
   const [quotes, setQuotes] = useState([]);
@@ -36,15 +49,30 @@ export default function TransportComparePage() {
 
   const [selectedQuote, setSelectedQuote] = useState(null);
   const [bookingForm, setBookingForm] = useState({
-    farmerName: '',
-    farmerPhone: '',
-    pickupAddress: '',
+    farmerName: user?.name || '',
+    farmerPhone: user?.phone || '',
+    pickupAddress: user?.city ? `${user.city}, Gujarat` : '',
     destinationAddress: '',
     pickupDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-    notes: '',
+    notes: bookingId ? `Linked with Storage Booking #${bookingId.slice(-6).toUpperCase()}` : '',
   });
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [bookingLoading, setBookingLoading] = useState(false);
+
+  // Sync user details if auth state updates
+  useEffect(() => {
+    if (user) {
+      setBookingForm((prev) => ({
+        ...prev,
+        farmerName: prev.farmerName || user.name || '',
+        farmerPhone: prev.farmerPhone || user.phone || '',
+        pickupAddress: prev.pickupAddress || (user.city ? `${user.city}, Gujarat` : ''),
+      }));
+      if (!paramCity && user.city) {
+        setPickupCity(user.city);
+      }
+    }
+  }, [user, paramCity]);
 
   const fetchQuotes = async () => {
     setLoading(true);
@@ -138,7 +166,61 @@ export default function TransportComparePage() {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20 space-y-4">
+        {/* Farmer Dashboard Connection Bar */}
+        <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-950/95 via-teal-950/95 to-slate-950/95 border border-emerald-500/40 flex flex-wrap items-center justify-between gap-3 shadow-xl backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-emerald-400 text-slate-950 flex items-center justify-center font-black shadow-md shrink-0">
+              <Wheat className="w-5 h-5 text-slate-950" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-white">
+                  {user ? `Farmer Portal: ${user.name}` : 'AgriCold Farmer Logistics Network'}
+                </span>
+                {bookingId && (
+                  <span className="text-[10px] bg-amber-400/20 text-amber-300 font-extrabold px-2.5 py-0.5 rounded-full border border-amber-400/40">
+                    Linked to Storage Booking #{bookingId.slice(-6).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-emerald-200/80 flex items-center gap-2 mt-0.5">
+                {user ? (
+                  <>
+                    <span>📞 {user.phone || 'No phone'}</span>
+                    <span>•</span>
+                    <span>📍 {user.city || 'Gujarat'}, India</span>
+                    <span>•</span>
+                    <span className="text-emerald-400 font-bold">Verified Farmer Profile</span>
+                  </>
+                ) : (
+                  <span>Sign in to automatically link logistics with your cold storage bookings</span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            {isAuthenticated ? (
+              <Link
+                to="/farmer"
+                className="px-4 py-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-2 shadow-md hover:scale-105 active:scale-95 transition-all border border-amber-300"
+              >
+                <Wheat className="w-3.5 h-3.5" />
+                <span>Open Farmer Dashboard</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : (
+              <Link
+                to="/auth?role=farmer&redirect=/transport"
+                className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all"
+              >
+                <span>Farmer Sign In</span>
+              </Link>
+            )}
+          </div>
+        </div>
+
         <div className="bg-slate-950/90 border border-emerald-500/30 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
           <form onSubmit={handleSearchSubmit} className="space-y-4">
             
@@ -486,16 +568,26 @@ export default function TransportComparePage() {
                 <p className="text-xs text-slate-300">
                   {bookingSuccess.message}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedQuote(null);
-                    setBookingSuccess(null);
-                  }}
-                  className="w-full py-3 rounded-xl bg-emerald-500 text-slate-950 font-black text-sm cursor-pointer hover:bg-emerald-400"
-                >
-                  Done
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+                  <Link
+                    to="/farmer"
+                    className="flex-1 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02] cursor-pointer"
+                  >
+                    <Wheat className="w-4 h-4" />
+                    <span>Return to Farmer Dashboard</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedQuote(null);
+                      setBookingSuccess(null);
+                    }}
+                    className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs cursor-pointer transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             ) : (
               <div>

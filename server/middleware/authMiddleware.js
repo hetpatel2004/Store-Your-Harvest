@@ -18,6 +18,12 @@ const protect = async (req, res, next) => {
       if (!req.user) {
         return res.status(401).json({ message: 'Not authorized, user not found' });
       }
+      if (req.user.isBanned) {
+        return res.status(403).json({
+          message: `Your account has been suspended by the platform administrator. Reason: ${req.user.banReason || 'Administrative suspension.'}`,
+          isBanned: true,
+        });
+      }
       next();
     } catch (error) {
       console.error('Auth error:', error.message);

@@ -50,9 +50,16 @@ export const AuthProvider = ({ children }) => {
     throw new Error(res.data.message || 'Login failed');
   };
 
-  // Register: owner registers first, must then login with their credentials
+  // Register: creates account and logs in if token is returned
   const register = async (userData) => {
     const res = await api.post('/auth/register', userData);
+    if (res.data.success && res.data.token && res.data.user) {
+      setUser(res.data.user);
+      setToken(res.data.token);
+      localStorage.setItem('agricold_user', JSON.stringify(res.data.user));
+      localStorage.setItem('agricold_token', res.data.token);
+      setIsSessionValid(true);
+    }
     return res.data;
   };
 
