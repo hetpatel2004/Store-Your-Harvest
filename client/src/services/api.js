@@ -1,15 +1,32 @@
 import axios from 'axios';
 
+const computeBaseURL = () => {
+  let url = import.meta.env.VITE_API_URL || '/api';
+  if (typeof url === 'string') {
+    url = url.trim().replace(/\/+$/, '');
+    // If external host provided without /api (e.g. https://my-backend.vercel.app), append /api
+    if (url.startsWith('http') && !url.endsWith('/api')) {
+      url = `${url}/api`;
+    }
+  }
+  return url;
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: computeBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to attach JWT token
+// Request interceptor to attach JWT token and normalize url
 api.interceptors.request.use(
   (config) => {
+    // Avoid double /api if config.url starts with /api/
+    if (config.url && config.url.startsWith('/api/')) {
+      config.url = config.url.replace(/^\/api/, '');
+    }
+
     const token = localStorage.getItem('agricold_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

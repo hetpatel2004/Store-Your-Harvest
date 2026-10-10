@@ -55,7 +55,7 @@ export default function AdminAnalyticsPage() {
       ] = await Promise.all([
         api.get('/admin/stats'),
         api.get('/admin/storages'),
-        api.get('/api/storages/analytics'),
+        api.get('/storages/analytics'),
       ]);
 
       if (statsRes.data.success) {
