@@ -14,25 +14,20 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const transportRoutes = require('./routes/transportRoutes');
+const { createRateLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// URL normalization middleware for Vercel Serverless
+// Security: Hide server signature
+app.disable('x-powered-by');
+
+// Security Headers Middleware
 app.use((req, res, next) => {
-  if (req.url === '/server.js' || req.url.startsWith('/server.js?') || req.url.startsWith('/api/index.js')) {
-    if (req.query && req.query.path) {
-      req.url = req.query.path.startsWith('/') ? req.query.path : `/${req.query.path}`;
-    } else {
-      const forwarded =
-        req.headers['x-forwarded-uri'] ||
-        req.headers['x-matched-path'] ||
-        req.headers['x-now-route-matches'];
-      if (forwarded && forwarded !== '/server.js' && forwarded !== '/api/index.js') {
-        req.url = forwarded;
-      }
-    }
-  }
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 });
 
@@ -60,7 +55,8 @@ app.use(
   })
 );
 
-app.use(express.json());
+// Payload size limit to prevent Denial-of-Service memory floods
+app.use(express.json({ limit: '2mb' }));
 
 // Request logger for development
 if (process.env.NODE_ENV !== 'production') {
@@ -112,8 +108,15 @@ app.get('/api', (req, res) => {
   });
 });
 
+// Anti-Brute-Force Rate Limiter for Authentication (login/register)
+const authLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // Limit each IP to 30 requests per windowMs
+  message: 'Too many authentication attempts from this IP address. Please try again after 15 minutes.',
+});
+
 // Mount REST API Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/storages', storageRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);

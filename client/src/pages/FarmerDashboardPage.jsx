@@ -1999,7 +1999,6 @@ export default function FarmerDashboardPage() {
                             type="text"
                             placeholder="4532 •••• •••• 8910"
                             maxLength="19"
-                            defaultValue="4532 9801 2345 8910"
                             className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-mono"
                           />
                         </div>
@@ -2012,7 +2011,6 @@ export default function FarmerDashboardPage() {
                               type="text"
                               placeholder="MM/YY"
                               maxLength="5"
-                              defaultValue="12/28"
                               className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-mono"
                             />
                           </div>
@@ -2024,7 +2022,6 @@ export default function FarmerDashboardPage() {
                               type="password"
                               placeholder="•••"
                               maxLength="4"
-                              defaultValue="456"
                               className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-mono"
                             />
                           </div>

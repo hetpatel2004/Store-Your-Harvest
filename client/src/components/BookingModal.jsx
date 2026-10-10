@@ -178,18 +178,6 @@ export default function BookingModal({ isOpen, onClose, storage, onSuccess }) {
     }
   };
 
-  const handleDemoFarmerLogin = async () => {
-    setAuthError('');
-    setAuthLoading(true);
-    try {
-      await login('ramesh@farmer.com', 'Farmer@123');
-    } catch (err) {
-      setAuthError('Demo login failed: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -447,19 +435,6 @@ export default function BookingModal({ isOpen, onClose, storage, onSuccess }) {
                       ? 'Sign In & Continue Booking'
                       : 'Create Farmer Account & Book'}
                   </span>
-                </button>
-              </div>
-
-              {/* Instant One-Click Demo Farmer Button */}
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="text-slate-500">Testing? Use demo account:</span>
-                <button
-                  type="button"
-                  onClick={handleDemoFarmerLogin}
-                  disabled={authLoading}
-                  className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 hover:bg-amber-200 font-extrabold cursor-pointer transition-colors"
-                >
-                  ⚡ One-Click Farmer Login
                 </button>
               </div>
             </form>

@@ -171,12 +171,22 @@ const createBooking = async (req, res, next) => {
       return next(new ErrorResponse('Please provide all required booking fields', 400));
     }
 
+    const qty = Number(quantity);
+    const dur = Number(durationDays) || 30;
+
+    if (isNaN(qty) || qty <= 0 || qty > 1000000) {
+      return next(new ErrorResponse('Please provide a valid quantity between 1 and 1,000,000 kg', 400));
+    }
+
+    if (isNaN(dur) || dur <= 0 || dur > 365) {
+      return next(new ErrorResponse('Please provide a valid duration between 1 and 365 days', 400));
+    }
+
     const storage = await Storage.findById(storageId);
     if (!storage) {
       return next(new ErrorResponse('Selected cold storage facility not found', 404));
     }
 
-    const qty = Number(quantity);
     if (storage.availableCapacity < qty) {
       return next(
         new ErrorResponse(

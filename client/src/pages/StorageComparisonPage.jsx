@@ -6,7 +6,7 @@ import {
   Layout,
   Settings,
   Users,
-  ArrowRightArrowLeft,
+  ArrowLeftRight,
   AlertCircle,
   CheckCircle,
   XCircle,
@@ -18,11 +18,6 @@ export default function StorageComparisonPage() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
-
-  if (!isAuthenticated) {
-    navigate('/auth?tab=login');
-    return null;
-  }
 
   const [storage, setStorage] = useState(null);
   const [comparedStorages, setComparedStorages] = useState([]);
@@ -94,7 +89,8 @@ export default function StorageComparisonPage() {
               </h2>
               <p className="text-slate-500 text-sm">
                 {storage.cropsData?.length || 0} crops supported
-            </p>
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -171,9 +167,9 @@ export default function StorageComparisonPage() {
                     key={comparedStorage._id}
                     className="bg-white rounded-xl p-5 border border-slate-200 hover:border-emerald-200 transition-colors"
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="mb-3">
                       {/* Crop Chips */}
-                      <div className="flex flex-wrap gap-2 mb-3">
+                      <div className="flex flex-wrap gap-2">
                         {storageCrops.slice(0, 3).map((crop) => (
                           <span
                             key={crop}
@@ -182,7 +178,7 @@ export default function StorageComparisonPage() {
                             {crop}
                           </span>
                         ))}
-                      </span>
+                      </div>
                     </div>
 
                     <h4 className="font-medium text-slate-800 truncate mb-2">

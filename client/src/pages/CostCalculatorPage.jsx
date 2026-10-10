@@ -19,11 +19,6 @@ export default function CostCalculatorPage() {
   const navigate = useNavigate();
   const { storageId } = useParams();
 
-  if (!isAuthenticated) {
-    navigate('/auth?tab=login');
-    return null;
-  }
-
   const [calculation, setCalculation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [crop, setCrop] = useState('Tomato');
@@ -151,7 +146,7 @@ export default function CostCalculatorPage() {
               <p className="text-slate-500 text-sm">
                 Transparent storage & transport cost breakdown
               </p>
-            </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button

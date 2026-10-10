@@ -4,27 +4,22 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import {
   Leaf,
-  Fire,
+  Flame,
   Snowflake,
-  Tear,
+  Droplet,
   Sparkles,
   ShieldCheck,
   CheckCircle,
   XCircle,
-  Information,
+  Info,
 } from 'lucide-react';
 
 export default function CropProfilesPage() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  if (!isAuthenticated) {
-    navigate('/auth?tab=login');
-    return null;
-  }
-
   const [profiles, setProfiles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Crop profiles are loaded from server

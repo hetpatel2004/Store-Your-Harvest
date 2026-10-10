@@ -12,6 +12,9 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import FarmerDashboardPage from './pages/FarmerDashboardPage';
 import AuthPage from './pages/AuthPage';
 import TransportComparePage from './pages/TransportComparePage';
+import CropProfilesPage from './pages/CropProfilesPage';
+import CostCalculatorPage from './pages/CostCalculatorPage';
+import StorageComparisonPage from './pages/StorageComparisonPage';
 
 export default function App() {
   const location = useLocation();
@@ -32,11 +35,17 @@ export default function App() {
           <Route path="/storages" element={<StorageResultsPage />} />
           <Route path="/storages/:id" element={<StorageDetailPage />} />
           <Route path="/transport" element={<TransportComparePage />} />
+          <Route path="/crops" element={<CropProfilesPage />} />
+          <Route path="/calculator" element={<CostCalculatorPage />} />
+          <Route path="/storages/:storageId/calculate" element={<CostCalculatorPage />} />
+          <Route path="/compare/:id" element={<StorageComparisonPage />} />
+          <Route path="/comparison/:id" element={<StorageComparisonPage />} />
           <Route path="/farmer" element={<FarmerDashboardPage />} />
           <Route path="/farmer-dashboard" element={<FarmerDashboardPage />} />
           <Route path="/owner" element={<OwnerDashboardPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="*" element={<LandingPage />} />
         </Routes>
       </div>
       {!isDashboard && <Footer />}

@@ -122,7 +122,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div>
-            © {new Date().getFullYear()} AgriCold Connect. Built for Hackathon Demo.
+            © {new Date().getFullYear()} AgriCold Connect. Gujarat Agricultural Cold Chain Network. All rights reserved.
           </div>
           <div className="flex items-center gap-1 text-slate-400">
             <span>Empowering farmers with smart refrigeration & zero waste</span>

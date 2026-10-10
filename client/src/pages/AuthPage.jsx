@@ -385,82 +385,15 @@ export default function AuthPage() {
                 </button>
               </div>
 
-              {/* Quick Demo Credentials for Fast Testing */}
-              <div className="mt-5 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-left text-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold uppercase tracking-wider text-[10px] text-emerald-800 flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5" />
-                    <span>One-Click Test Accounts</span>
-                  </span>
-                  <span className="text-[10px] bg-amber-400 text-slate-950 font-bold px-2 py-0.5 rounded-full">
-                    Instant Demo
-                  </span>
+              {/* Security & Data Protection Notice */}
+              <div className="mt-5 p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/70 text-center text-xs space-y-1">
+                <div className="flex items-center justify-center gap-1.5 text-emerald-800 font-extrabold text-[11px]">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>256-Bit SSL Encrypted & Secure Session</span>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                  {/* Farmer Quick Autofill */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRole('farmer');
-                      setIsLogin(true);
-                      setEmail('ramesh@farmer.com');
-                      setPassword('Farmer@123');
-                    }}
-                    className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-amber-500 text-left transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between mb-0.5">
-                      <strong className="text-slate-900 font-black text-xs">🧑‍🌾 Farmer</strong>
-                      <span className="text-[9px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded">
-                        farmer
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-mono truncate">ramesh@farmer.com</div>
-                    <div className="text-[10px] text-slate-400 font-mono">Pass: Farmer@123</div>
-                  </button>
-
-                  {/* Storage Owner Quick Autofill */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRole('owner');
-                      setIsLogin(true);
-                      setEmail('rajesh@patelcoldstorage.com');
-                      setPassword('Owner@123');
-                    }}
-                    className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-emerald-500 text-left transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between mb-0.5">
-                      <strong className="text-slate-900 font-black text-xs">🏢 Owner</strong>
-                      <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
-                        owner
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-mono truncate">rajesh@patelcold...</div>
-                    <div className="text-[10px] text-slate-400 font-mono">Pass: Owner@123</div>
-                  </button>
-
-                  {/* Super Admin Quick Autofill */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRole('owner');
-                      setIsLogin(true);
-                      setEmail('admin@agricold.in');
-                      setPassword('Admin@123');
-                    }}
-                    className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-purple-500 text-left transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between mb-0.5">
-                      <strong className="text-slate-900 font-black text-xs">👑 Admin</strong>
-                      <span className="text-[9px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">
-                        admin
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-mono truncate">admin@agricold.in</div>
-                    <div className="text-[10px] text-slate-400 font-mono">Pass: Admin@123</div>
-                  </button>
-                </div>
+                <p className="text-[11px] text-slate-500">
+                  Your credentials and farm records are encrypted and protected by end-to-end security protocols.
+                </p>
               </div>
             </form>
           </div>
