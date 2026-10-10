@@ -18,6 +18,24 @@ const transportRoutes = require('./routes/transportRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// URL normalization middleware for Vercel Serverless
+app.use((req, res, next) => {
+  if (req.url === '/server.js' || req.url.startsWith('/server.js?') || req.url.startsWith('/api/index.js')) {
+    if (req.query && req.query.path) {
+      req.url = req.query.path.startsWith('/') ? req.query.path : `/${req.query.path}`;
+    } else {
+      const forwarded =
+        req.headers['x-forwarded-uri'] ||
+        req.headers['x-matched-path'] ||
+        req.headers['x-now-route-matches'];
+      if (forwarded && forwarded !== '/server.js' && forwarded !== '/api/index.js') {
+        req.url = forwarded;
+      }
+    }
+  }
+  next();
+});
+
 // Dynamic CORS configuration (Allows localhost, CLIENT_URL, and all Vercel deployments)
 const allowedOrigins = [
   'http://localhost:5173',
